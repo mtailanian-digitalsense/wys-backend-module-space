@@ -7,6 +7,7 @@ manage all logic for wys projects
 import jwt
 import os
 import logging
+import constants
 from flask import Flask, jsonify, abort, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_swagger import swagger
@@ -27,12 +28,7 @@ app.config['SECRET_KEY']= 'Th1s1ss3cr3t'
 app.logger.setLevel(logging.DEBUG)
 db = SQLAlchemy(app)
 
-
-if __name__ == '__main__':
-    app.run()
-    app.debug=True
-
-class Category(db.model):
+class Category(db.Model):
     """
     Category.
     Represent a Categories of Spaces that are used to calc the final area.
@@ -71,7 +67,7 @@ class Category(db.model):
         """
         return jsonify(self.to_dict())
 
-class Subcategory(db.model):
+class Subcategory(db.Model):
     """
     Subcategory.
     Represent a Subcategory of Spaces that are used to calc the final area.
@@ -181,6 +177,38 @@ class Space(db.Model):
 
 db.create_all() # Create all tables
 
+def load_constants_seed_data():
+    
+    cat_total_rows = db.session \
+        .query(Category) \
+        .count()
+    
+    subcat_total_rows = db.session \
+        .query(Subcategory) \
+        .count()
+    
+    # If there are variables in database, do nothing
+    if(cat_total_rows > 0 and subcat_total_rows > 0):
+        return
+    
+    # Else put the variables by defect
+
+    try:
+        for k, v in constants.SEED_DATA.items():
+            category = Category(name=k)
+            for i, j in v.items():
+                subcategory = Subcategory( name = i, 
+                                           area = j['SUPERFICIE'],
+                                           people_capacity = j['PERSONAS'], 
+                                           usage_percentage = j['PORC_USO'], 
+                                           unit_area = j['SUPERFICIE_U'])
+                category.subcategories.append(subcategory)
+            db.session.add(category)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"load_constants_seed_data -> {e}")
+
 # Swagger Config
 
 SWAGGER_URL = '/api/projects/docs/'
@@ -194,3 +222,8 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 )
 
 app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
+
+if __name__ == '__main__':
+    load_constants_seed_data()
+    app.run()
+    app.debug=True
