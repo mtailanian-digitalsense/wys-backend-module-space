@@ -81,6 +81,7 @@ class Subcategory(db.model):
     id: Represent the unique id of a Internal SubCategory
     name: Name of a Internal Category
     category_id: Parent Category's ID (Many to One)
+    spaces: Spaces associated to this subcategory (One to Many)
     """
 
     id = db.Column(db.Integer, primary_key=True)
@@ -91,6 +92,9 @@ class Subcategory(db.model):
     unit_area = db.Column(db.Float)
     category_id = db.Column(db.Integer, db.ForeignKey(
         'category.id'), nullable=False)
+    spaces = db.relationship(
+        "Space",
+        backref="subcategory")
 
     def serialize(self):
         """
@@ -102,12 +106,19 @@ class Subcategory(db.model):
         """
         Convert to dictionary
         """
-        return {
+
+        spaces_dicts = [space.to_dict()
+                                for space in self.spaces]
+        obj_dict = {
             'id': self.id,
             'name': self.name,
-            'density': self.density,
-            'category_id': self.category_id
+            'area': self.area,
+            'people_capacity': self.people_capacity,
+            'category_id': self.category_id,
+            'spaces' : spaces_dicts
         }
+
+        return obj_dict
 
 class Space(db.Model):
     """
@@ -120,6 +131,7 @@ class Space(db.Model):
     name: Name of the project
     m2_id: Id of the work made in M2 module
     location_id: ID of the work made in location module
+    subcategory_id: Parent Subcategory ID (Many to One)
 
     """
 
@@ -135,12 +147,15 @@ class Space(db.Model):
     down_gap =  db.Column(db.Float, default = 0)
     left_gap = db.Column(db.Float, default = 0)
     right_gap = db.Column(db.Float, default = 0)
+    subcategory_id = db.Column(db.Integer, db.ForeignKey(
+        'subcategory.id'), nullable=False)
 
     def to_dict(self):
         """
         Convert to dictionary
         """
-        dict = {
+
+        obj_dict = {
             'id': self.id,
             'model_2d' : self.model_2d,
             'model_3d' : self.model_3d,
@@ -151,9 +166,11 @@ class Space(db.Model):
             'up_gap' :  self.up_gap,
             'down_gap' :  self.down_gap,
             'left_gap' : self.left_gap,
-            'right_gap' : self.right_gap
+            'right_gap' : self.right_gap,
+            'subcategory_id' : self.subcategory_id
         }
-        return dict
+
+        return obj_dict
 
     def serialize(self):
         """
