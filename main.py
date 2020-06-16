@@ -137,8 +137,8 @@ class Space(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
-    model_2d = db.Column(db.BLOB, nullable=False)
-    model_3d = db.Column(db.BLOB, nullable=False)
+    model_2d = db.Column(db.BLOB)
+    model_3d = db.Column(db.BLOB)
     height = db.Column(db.Float, nullable=False)
     width =  db.Column(db.Float, nullable=False)
     active =  db.Column(db.Boolean, default = True)
