@@ -211,8 +211,8 @@ def load_constants_seed_data():
 
 # Swagger Config
 
-SWAGGER_URL = '/api/projects/docs/'
-API_URL = '/api/projects/spec'
+SWAGGER_URL = '/api/spaces/docs/'
+API_URL = '/api/spaces/spec'
 swaggerui_blueprint = get_swaggerui_blueprint(
     SWAGGER_URL,
     API_URL,
@@ -242,7 +242,8 @@ def token_required(f):
 
     return decorator
 
-@app.route("/api/m2/spec", methods=['GET'])
+
+@app.route("/api/spaces/spec", methods=['GET'])
 @token_required
 def spec():
     return jsonify(swagger(app))
