@@ -223,6 +223,31 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 
 app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
+
+def token_required(f):
+    @wraps(f)
+    def decorator(*args, **kwargs):
+
+        token = request.headers.get('Authorization', None)
+        if not token:
+            app.logger.debug("token_required")
+            return jsonify({'message': 'a valid token is missing'})
+        app.logger.debug("Token: " + token)
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        except:
+            return jsonify({'message': 'token is invalid'})
+
+        return f(*args, **kwargs)
+
+    return decorator
+
+@app.route("/api/m2/spec", methods=['GET'])
+@token_required
+def spec():
+    return jsonify(swagger(app))
+
+
 if __name__ == '__main__':
     load_constants_seed_data()
     app.run()
