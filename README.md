@@ -1,29 +1,307 @@
-# README #
+# API Endpoints for Spaces
 
-This README would normally document whatever steps are necessary to get your application up and running.
+Port: 8083
 
-### What is this repository for? ###
+## Show all categories and subcategories to be attached to spaces 
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+**URL** : `/api/spaces/create`
 
-### How do I get set up? ###
+**Method** : `GET`
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+**Auth required** : YES
 
-### Contribution guidelines ###
+### Success Response
 
-* Writing tests
-* Code review
-* Other guidelines
+**Code** : `200 OK`
 
-### Who do I talk to? ###
+**Content example**
 
-* Repo owner or admin
-* Other community or team contact
+Before to create a space, the frontend must call to this method to get all categories
+and subcategories. One of these categories-subcategories pair must be added to the new space.   
+
+```json
+[{
+    "id": 1,
+    "name": "Category 1",
+    "subcategories": [{
+      "id": 1,
+      "name": "subcat1"    
+    },
+    {
+      "id": 2,
+      "name": "subcat2"    
+    }] 
+},{
+    "id": 4,
+    "name": "Category 4",
+    "subcategories": [{
+      "id": 5,
+      "name": "subcat5"    
+    },
+    {
+      "id": 6,
+      "name": "subcat6"    
+    }] 
+}] 
+```
+
+### Error Responses
+
+**Condition** :  If server has some error.
+
+**Code** : `500 Internal Error Server`
+
+**Content** : `{error_message}`
+
+
+## Create a new Space 
+
+**URL** : `/api/spaces/create`
+
+**Required Body** :
+````json
+{
+    "name": name, //String
+    "model_2d" : model_2d, //base 64 file
+    "model_3d" : model_3d, //base 64 file
+    "height" : height, //in cm
+    "width" :  width, //in cm
+    "active" :  active, //bool
+    "regular" :  regular, //bool
+    "up_gap" :  up_gap, //float in cm
+    "down_gap" :  down_gap, //float in cm
+    "left_gap" : left_gap, // float in cm
+    "right_gap" : right_gap, // float in cm
+    "subcategory_id" : subcategory_id // gotten in "/api/spaces/create"
+}
+````
+
+**Method** : `POST`
+
+**Auth required** : YES
+
+### Success Response
+
+**Code** : `201 CREATED`
+
+**Content example**
+
+````json
+{
+    "id": 1, //Integer
+    "name": "Space1", //String
+    "model_2d" : "asdkasdjkasjdkajd", //base 64 file
+    "model_3d" : "aaksdaksdkasjdkasjd", //base 64 file
+    "height" : 300.5, //in cm
+    "width" :  400.9, //in cm
+    "active" :  true, //bool
+    "regular" :  true, //bool
+    "up_gap" :  1.0, //float in cm
+    "down_gap" :  1.0, //float in cm
+    "left_gap" : 1.0, // float in cm
+    "right_gap" : 1.0, // float in cm
+    "subcategory_id" : 2 // gotten in "/api/spaces/create"
+}
+````
+
+### Error Responses
+
+**Condition** :  If server has some error.
+
+**Code** : `500 Internal Error Server`
+
+**Content** : `{error_message}`
+
+## Get all spaces 
+
+**URL** : `/api/spaces/`
+
+**Method** : `GET`
+
+**Auth required** : YES
+
+### Success Response
+
+**Code** : `200 OK`
+
+**Content example:**
+Show all spaces in DB
+````json
+[{
+        "id": 1, //Integer,
+        "name": "Space1", //String
+        "model_2d" : "asdkasdjkasjdkajd", //base 64 file
+        "model_3d" : "aaksdaksdkasjdkasjd", //base 64 file
+        "height" : 300.5, //in cm
+        "width" :  400.9, //in cm
+        "active" :  true, //bool
+        "regular" :  true, //bool
+        "up_gap" :  1.0, //float in cm
+        "down_gap" :  1.0, //float in cm
+        "left_gap" : 1.0, // float in cm
+        "right_gap" : 1.0, // float in cm
+        "subcategory_id" : 2 // gotten in "/api/spaces/create"
+    },
+    {
+        "id": 1, //Integer,
+        "name": "Space2", //String
+        "model_2d" : "asdkasdjkasjdkajd", //base 64 file
+        "model_3d" : "aaksdaksdkasjdkasjd", //base 64 file
+        "height" : 300.5, //in cm
+        "width" :  400.9, //in cm
+        "active" :  true, //bool
+        "regular" :  true, //bool
+        "up_gap" :  1.0, //float in cm
+        "down_gap" :  1.0, //float in cm
+        "left_gap" : 1.0, // float in cm
+        "right_gap" : 1.0, // float in cm
+        "subcategory_id" : 2 // gotten in "/api/spaces/create"
+        }]
+````
+
+### Error Responses
+
+**Condition** :  If server has some error.
+
+**Code** : `500 Internal Error Server`
+
+**Content** : `{error_message}`
+
+## Get a single space
+
+**URL** : `/api/spaces/{space_id}`
+
+**Method** : `GET`
+
+**Auth required** : YES
+
+### Success Response
+
+**Code** : `200 OK`
+
+**Content example:**
+If the space's id is 1, then the response will be: 
+````json
+{
+    "id": 1, //Integer,
+    "name": "Space1", //String
+    "model_2d" : "asdkasdjkasjdkajd", //base 64 file
+    "model_3d" : "aaksdaksdkasjdkasjd", //base 64 file
+    "height" : 300.5, //in cm
+    "width" :  400.9, //in cm
+    "active" :  true, //bool
+    "regular" :  true, //bool
+    "up_gap" :  1.0, //float in cm
+    "down_gap" :  1.0, //float in cm
+    "left_gap" : 1.0, // float in cm
+    "right_gap" : 1.0, // float in cm
+    "subcategory_id" : 2 // gotten in "/api/spaces/create"
+}
+````
+
+### Error Responses
+
+**Condition** :  If server has some error.
+
+**Code** : `500 Internal Error Server`
+
+**Content** : `{error_message}`
+
+## Update a space
+
+**URL** : `/api/spaces/update`
+
+**Required Body** :
+````json
+{
+    "id": id, //Integer
+    "name": name, //String
+    "model_2d" : model_2d, //base 64 file
+    "model_3d" : model_3d, //base 64 file
+    "height" : height, //in cm
+    "width" :  width, //in cm
+    "active" :  active, //bool
+    "regular" :  regular, //bool
+    "up_gap" :  up_gap, //float in cm
+    "down_gap" :  down_gap, //float in cm
+    "left_gap" : left_gap, // float in cm
+    "right_gap" : right_gap, // float in cm
+    "subcategory_id" : subcategory_id // gotten in "/api/spaces/create"
+}
+````
+
+**Method** : `PUT`
+
+**Auth required** : YES
+
+### Success Response
+
+**Code** : `200 OK`
+
+**Content example:**
+Space Updated Successfully
+````json
+{
+    "id": 1, //Integer,
+    "name": "Space1", //String
+    "model_2d" : "asdkasdjkasjdkajd", //base 64 file
+    "model_3d" : "aaksdaksdkasjdkasjd", //base 64 file
+    "height" : 300.5, //in cm
+    "width" :  400.9, //in cm
+    "active" :  true, //bool
+    "regular" :  true, //bool
+    "up_gap" :  1.0, //float in cm
+    "down_gap" :  1.0, //float in cm
+    "left_gap" : 1.0, // float in cm
+    "right_gap" : 1.0, // float in cm
+    "subcategory_id" : 2 // gotten in "/api/spaces/create"
+}
+````
+
+### Error Responses
+
+**Condition** :  The space id was not found.
+
+**Code** : `400 Bad Request`
+
+**Content** : `{error_message}`
+
+**Condition** :  If server has some error.
+
+**Code** : `500 Internal Error Server`
+
+**Content** : `{error_message}` 
+
+**Method** : `PUT`
+
+**Auth required** : YES
+
+## Desable a space
+
+**URL** : `/api/spaces/{space_id}`
+
+**Method** : `DELETE`
+
+**Auth required** : YES
+
+### Success Response
+
+**Code** : `200 OK`
+
+### Error Responses
+
+**Condition** :  The space id was not found.
+
+**Code** : `400 Bad Request`
+
+**Content** : `{error_message}`
+
+**Condition** :  If server has some error.
+
+**Code** : `500 Internal Error Server`
+
+**Content** : `{error_message}` 
+
+**Method** : `PUT`
+
+**Auth required** : YES
