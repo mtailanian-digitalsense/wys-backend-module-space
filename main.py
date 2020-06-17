@@ -174,8 +174,10 @@ class Space(db.Model):
         Serialize to json
         """
         space_dict = self.to_dict()
-        space_dict['model_3d'] = space_dict['model_3d'].decode('utf8')
-        space_dict['model_2d'] = space_dict['model_2d'].decode('utf8')
+        if space_dict['model_3d'] is not None:
+            space_dict['model_3d'] = space_dict['model_3d'].decode('utf8')
+        if space_dict['model_2d'] is not None:
+            space_dict['model_2d'] = space_dict['model_2d'].decode('utf8')
         return jsonify(space_dict)
 
 
@@ -387,19 +389,15 @@ def get_all_spaces():
         spaces = Space.query.all()
         spaces_dict = [space.to_dict() for space in spaces]
         for space in spaces_dict:
-            space['model_2d'] = space['model_2d'].decode('utf-8')
-            space['model_3d'] = space['model_3d'].decode('utf-8')
+            if space['model_2d'] is not None:
+                space['model_2d'] = space['model_2d'].decode('utf-8')
+            if space['model_3d'] is not None:
+                space['model_3d'] = space['model_3d'].decode('utf-8')
         return jsonify(spaces_dict)
     except SQLAlchemyError as e:
         abort(f'Unknown Error f{e}', 500)
     except Exception as e:
         abort(f'Unknown Error f{e}', 500)
-
-
-
-
-
-
 
 
 @app.route('/api/spaces/<space_id>', methods = ['GET', 'PUT', 'DELETE'])
@@ -454,6 +452,7 @@ def manage_space_by_id(space_id):
     except Exception as exp:
         app.logger.error(f"Error in database: mesg ->{exp}")
         return exp, 500
+
 
 if __name__ == '__main__':
     load_constants_seed_data()
