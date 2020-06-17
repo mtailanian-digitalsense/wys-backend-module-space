@@ -1,6 +1,6 @@
 """
-This module run a microservice called Project service. This module
-manage all logic for wys projects
+This module run a microservice called Space service. This module
+manage all logic for wys Spaces
 
 """
 
@@ -126,12 +126,9 @@ class Space(db.Model):
 
     Attributes
     ----------
-    id: Represent the unique id of a project
-    name: Name of the project
-    m2_id: Id of the work made in M2 module
-    location_id: ID of the work made in location module
-    subcategory_id: Parent Subcategory ID (Many to One)
-
+    id: Represent the unique id of a Space
+    name: Name of the Space
+    ...
     """
 
     id = db.Column(db.Integer, primary_key=True)
@@ -223,7 +220,7 @@ swaggerui_blueprint = get_swaggerui_blueprint(
     SWAGGER_URL,
     API_URL,
     config={  # Swagger UI config overrides
-        'app_name': "WYS Api. Project Service"
+        'app_name': "WYS Api. Space Service"
     }
 )
 
@@ -398,6 +395,65 @@ def get_all_spaces():
     except Exception as e:
         abort(f'Unknown Error f{e}', 500)
 
+
+
+
+
+
+
+
+@app.route('/api/spaces/<space_id>', methods = ['GET', 'PUT', 'DELETE'])
+@token_required
+def manage_space_by_id(space_id):
+    """
+        Manage Space By ID (Show, update and delete)
+        ---
+        parameters:
+          - in: path
+            name: space_id
+            type: integer
+            description: Space ID
+        responses:
+          200:
+            description: Space Object or deleted message
+          404:
+            description: Space Not Found
+          500:
+            description: "Database error"
+    """
+    try:
+        space = Space.query.filter_by(id=space_id).first()
+        if(space is not None):
+            if request.method == 'GET':
+                return space.serialize(), 200
+            if request.method == 'PUT':
+                space.name = request.json['name'] if 'name' in request.json else space.name
+                space.model_2d = request.json['model_2d'] if 'model_2d' in request.json else space.model_2d
+                space.model_3d = request.json['model_3d'] if 'model_3d' in request.json else space.model_3d
+                space.height = request.json['height'] if 'height' in request.json else space.height
+                space.width =  request.json['width'] if 'width' in request.json else space.width
+                space.regular =  request.json['regular'] if 'regular' in request.json else space.regular
+                space.up_gap =  request.json['up_gap'] if 'up_gap' in request.json else space.up_gap
+                space.down_gap =  request.json['down_gap'] if 'down_gap' in request.json else space.down_gap
+                space.left_gap = request.json['left_gap'] if 'left_gap' in request.json else space.left_gap
+                space.right_gap = request.json['right_gap'] if 'right_gap' in request.json else space.right_gap
+
+                db.session.commit()
+
+                space_updated = Space.query.filter_by(id=space_id).first()
+                
+                return space_updated.serialize(), 200
+
+            if request.method == 'DELETE':
+                space.active = False
+                db.session.commit()
+
+                return jsonify({'result': 'Space deactivated'}), 200
+
+        return '{}', 404
+    except Exception as exp:
+        app.logger.error(f"Error in database: mesg ->{exp}")
+        return exp, 500
 
 if __name__ == '__main__':
     load_constants_seed_data()
