@@ -411,6 +411,8 @@ def manage_space_by_id(space_id):
             name: space_id
             type: integer
             description: Space ID
+        tags:
+        - "spaces"
         responses:
           200:
             description: Space Object or deleted message
