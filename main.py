@@ -7,6 +7,9 @@ manage all logic for wys projects
 import jwt
 import os
 import logging
+
+from sqlalchemy.exc import SQLAlchemyError
+
 import constants
 from flask import Flask, jsonify, abort, request
 from flask_sqlalchemy import SQLAlchemy
@@ -153,6 +156,7 @@ class Space(db.Model):
 
         obj_dict = {
             'id': self.id,
+            'name': self.name,
             'model_2d' : self.model_2d,
             'model_3d' : self.model_3d,
             'height' : self.height,
@@ -172,13 +176,15 @@ class Space(db.Model):
         """
         Serialize to json
         """
-       
-        return jsonify(self.to_dict())
+        space_dict = self.to_dict()
+        space_dict['model_3d'] = space_dict['model_3d'].decode('utf8')
+        space_dict['model_2d'] = space_dict['model_2d'].decode('utf8')
+        return jsonify(space_dict)
+
 
 db.create_all() # Create all tables
 
 def load_constants_seed_data():
-    
     cat_total_rows = db.session \
         .query(Category) \
         .count()
@@ -244,9 +250,153 @@ def token_required(f):
 
 
 @app.route("/api/spaces/spec", methods=['GET'])
-@token_required
 def spec():
-    return jsonify(swagger(app))
+    swag = swagger(app)
+    swag['info']['version'] = "1.0"
+    swag['info']['title'] = "WYS Space API Service"
+    swag['tags'] = [{
+        "name": "spaces",
+        "description": "Methods to configure spaces"
+    }]
+    return jsonify(swag)
+
+
+@app.route('/api/spaces/create', methods=['GET'])
+@token_required
+def data_to_create_spaces():
+    """
+        Show all categories and subcategories to be attached to a space
+        ---
+        produces:
+        - "application/json"
+        tags:
+        - "spaces"
+        responses:
+            200:
+                description: A list of all categories and their subcategories
+            500:
+                description: Internal Error
+    """
+    try:
+        all_spaces_dicts = [space.to_dict() for space in Category.query.all()]
+        return jsonify(all_spaces_dicts)
+    except Exception as e:
+        abort(f'Error trying to get data: {e}', 500)
+        return jsonify([])
+
+
+@app.route('/api/spaces/create', methods=['POST'])
+@token_required
+def new_space():
+    """
+        Save a new space
+        ---
+        consumes:
+        - "application/json"
+        produces:
+        - "application/json"
+        tags:
+        - "spaces"
+        parameters:
+        - in: "body"
+          name: "body"
+          required:
+          - name
+          - model_2d
+          - model_3d
+          - height
+          - width
+          - active
+          - regular
+          - up_gap
+          - down_gap
+          - left_gap
+          - right_gap
+          - subcategory_id
+          properties:
+            name:
+              type: string
+              description: name of the space
+            model_2d:
+              type: string
+              description: Base64 file
+            model_3d:
+              type: string
+              description: Base64 file
+            height:
+              type: number
+              description: Height of the space
+            width:
+              type: number
+              description: width of the space
+            active:
+              type: boolean
+              description: indicate if this space is active
+            regular:
+              type: boolean
+              description: indicate if this space is a regular space
+            up_gap:
+              type: number
+              description: up padding
+            down_gap:
+              type: number
+              description: down padding
+            left_gap:
+              type: number
+              description: left padding
+            right_gap:
+              type: number
+              description: right padding
+            subcategory_id:
+              type: integer
+              description: subcategory Id
+    """
+    if request.is_json:
+        try:
+            res_space = request.get_json()
+            space = Space(**res_space)
+            space.model_2d = res_space['model_2d'].encode('utf-8')
+            space.model_3d = res_space['model_3d'].encode('utf-8')
+            db.session.add(space)
+            db.session.commit()
+            return space.serialize(), 201
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            abort(f'Error saving data: {e}', 500)
+        except Exception as e:
+            db.session.rollback()
+            abort(f'Unknown Error: {e}', 500)
+    else:
+        abort('Body isn\'t application/json', 400)
+
+
+@app.route('/api/spaces/', methods=['GET'])
+@token_required
+def get_all_spaces():
+    """
+        Show all spaces
+        ---
+        produces:
+        - "application/json"
+        tags:
+        - "spaces"
+        responses:
+            200:
+                description: A list of all spaces
+            500:
+                description: Internal Error
+    """
+    try:
+        spaces = Space.query.all()
+        spaces_dict = [space.to_dict() for space in spaces]
+        for space in spaces_dict:
+            space['model_2d'] = space['model_2d'].decode('utf-8')
+            space['model_3d'] = space['model_3d'].decode('utf-8')
+        return jsonify(spaces_dict)
+    except SQLAlchemyError as e:
+        abort(f'Unknown Error f{e}', 500)
+    except Exception as e:
+        abort(f'Unknown Error f{e}', 500)
 
 
 if __name__ == '__main__':
