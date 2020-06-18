@@ -93,6 +93,7 @@ class SpaceTest(unittest.TestCase):
             rv = client.delete('/api/spaces/2')
             self.assertEqual(rv.status_code, 200)
 
+
 if __name__ == '__main__':
     unittest.main()
 

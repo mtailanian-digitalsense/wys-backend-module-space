@@ -16,6 +16,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_swagger import swagger
 from flask_swagger_ui import get_swaggerui_blueprint
 from functools import wraps
+from sqlalchemy.ext.hybrid import hybrid_property
 
 # Loading Config Parameters
 DB_USER = os.getenv('DB_USER', 'wys')
@@ -30,6 +31,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY']= 'Th1s1ss3cr3t'
 app.logger.setLevel(logging.DEBUG)
 db = SQLAlchemy(app)
+
 
 class Category(db.Model):
     """
@@ -133,8 +135,8 @@ class Space(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
-    model_2d = db.Column(db.BLOB)
-    model_3d = db.Column(db.BLOB)
+    __model_2d = db.Column(db.BLOB)
+    __model_3d = db.Column(db.BLOB)
     height = db.Column(db.Float, nullable=False)
     width =  db.Column(db.Float, nullable=False)
     active =  db.Column(db.Boolean, default = True)
@@ -145,6 +147,49 @@ class Space(db.Model):
     right_gap = db.Column(db.Float, default = 0)
     subcategory_id = db.Column(db.Integer, db.ForeignKey(
         'subcategory.id'), nullable=False)
+
+    def __init__(self, name, model_2d, model_3d, height, width,
+                 regular, active=True, up_gap=0, down_gap=0, left_gap=0, right_gap=0, subcategory_id=0):
+        self.name = name
+        self.model_2d = model_2d
+        self.model_3d = model_3d
+        self.height = height
+        self.width = width
+        self.active = active
+        self.regular = regular
+        self.up_gap = up_gap
+        self.down_gap = down_gap
+        self.left_gap = left_gap
+        self.right_gap = right_gap
+        self.subcategory_id = subcategory_id
+
+    @hybrid_property
+    def model_2d(self):
+        if self.__model_2d is not None:
+            return self.__model_2d.decode('utf-8')
+        else:
+            return None
+
+    @model_2d.setter
+    def model_2d(self, model):
+        if model is not None:
+            self.__model_2d = model.encode('utf-8')
+        else:
+            self.__model_2d = None
+
+    @hybrid_property
+    def model_3d(self):
+        if self.__model_3d is not None:
+            return self.__model_3d.decode('utf-8')
+        else:
+            return None
+
+    @model_3d.setter
+    def model_3d(self, model):
+        if model is not None:
+            self.__model_3d = model.encode('utf-8')
+        else:
+            self.__model_3d = None
 
     def to_dict(self):
         """
@@ -174,10 +219,6 @@ class Space(db.Model):
         Serialize to json
         """
         space_dict = self.to_dict()
-        if space_dict['model_3d'] is not None:
-            space_dict['model_3d'] = space_dict['model_3d'].decode('utf8')
-        if space_dict['model_2d'] is not None:
-            space_dict['model_2d'] = space_dict['model_2d'].decode('utf8')
         return jsonify(space_dict)
 
 
@@ -354,8 +395,6 @@ def new_space():
         try:
             res_space = request.get_json()
             space = Space(**res_space)
-            space.model_2d = res_space['model_2d'].encode('utf-8')
-            space.model_3d = res_space['model_3d'].encode('utf-8')
             db.session.add(space)
             db.session.commit()
             return space.serialize(), 201
@@ -388,11 +427,6 @@ def get_all_spaces():
     try:
         spaces = Space.query.all()
         spaces_dict = [space.to_dict() for space in spaces]
-        for space in spaces_dict:
-            if space['model_2d'] is not None:
-                space['model_2d'] = space['model_2d'].decode('utf-8')
-            if space['model_3d'] is not None:
-                space['model_3d'] = space['model_3d'].decode('utf-8')
         return jsonify(spaces_dict)
     except SQLAlchemyError as e:
         abort(f'Unknown Error f{e}', 500)
