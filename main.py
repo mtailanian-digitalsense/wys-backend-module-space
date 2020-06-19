@@ -108,7 +108,7 @@ class Subcategory(db.Model):
         Convert to dictionary
         """
 
-        spaces_dicts = [space.to_dict()
+        spaces_dicts = [space.id
                                 for space in self.spaces]
         obj_dict = {
             'id': self.id,
@@ -116,6 +116,7 @@ class Subcategory(db.Model):
             'area': self.area,
             'people_capacity': self.people_capacity,
             'category_id': self.category_id,
+            'unit_area': self.unit_area,
             'spaces' : spaces_dicts
         }
 
