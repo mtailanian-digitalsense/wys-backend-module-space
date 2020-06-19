@@ -24,6 +24,8 @@ DB_PASS = os.getenv('DB_PASSWORD', 'rac3e/07')
 DB_IP = os.getenv('DB_IP_ADDRESS', '10.2.19.195')
 DB_PORT = os.getenv('DB_PORT', '3307')
 DB_SCHEMA = os.getenv('DB_SCHEMA', 'wys')
+APP_HOST = os.getenv('APP_HOST', '127.0.0.1')
+APP_PORT = os.getenv('APP_PORT', 5001)
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql://{DB_USER}:{DB_PASS}@{DB_IP}:{DB_PORT}/{DB_SCHEMA}"
@@ -494,5 +496,4 @@ def manage_space_by_id(space_id):
 
 
 if __name__ == '__main__':
-    app.run()
-    app.debug=True
+    app.run(host = APP_HOST, port = APP_PORT, debug = True)
