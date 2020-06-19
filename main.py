@@ -25,7 +25,7 @@ DB_IP = os.getenv('DB_IP_ADDRESS', '10.2.19.195')
 DB_PORT = os.getenv('DB_PORT', '3307')
 DB_SCHEMA = os.getenv('DB_SCHEMA', 'wys')
 APP_HOST = os.getenv('APP_HOST', '127.0.0.1')
-APP_PORT = os.getenv('APP_PORT', 5001)
+APP_PORT = os.getenv('APP_PORT', 5002)
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql://{DB_USER}:{DB_PASS}@{DB_IP}:{DB_PORT}/{DB_SCHEMA}"
