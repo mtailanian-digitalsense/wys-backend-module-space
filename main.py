@@ -225,6 +225,7 @@ class Space(db.Model):
 
 db.create_all() # Create all tables
 
+
 def load_constants_seed_data():
     cat_total_rows = db.session \
         .query(Category) \
@@ -269,6 +270,7 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 )
 
 app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
+load_constants_seed_data()
 
 
 def token_required(f):
@@ -492,6 +494,5 @@ def manage_space_by_id(space_id):
 
 
 if __name__ == '__main__':
-    load_constants_seed_data()
     app.run()
     app.debug=True
