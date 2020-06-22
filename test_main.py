@@ -11,6 +11,9 @@ class SpaceTest(unittest.TestCase):
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + \
         os.path.join('.', 'test.db')
         self.app = app.test_client()
+        f = open('oauth-private.key', 'r')
+        self.key = f.read()
+        f.close()
 
         db.create_all()
         load_constants_seed_data()
@@ -68,13 +71,28 @@ class SpaceTest(unittest.TestCase):
 
     def test_get_space_by_id(self):
         with app.test_client() as client:
-            client.environ_base['HTTP_AUTHORIZATION'] = jwt.encode({'some': 'payload'}, app.config['SECRET_KEY'], algorithm='HS256')
+            client.environ_base['HTTP_AUTHORIZATION'] = self.build_token(self.key)
             rv = client.get('/api/spaces/1')
             self.assertEqual(rv.status_code, 200)
 
+    @staticmethod
+    def build_token(key, user_id=1):
+        payload = {
+            "aud": "1",
+            "jti": "450ca670aff83b220d8fd58d9584365614fceaf210c8db2cf4754864318b5a398cf625071993680d",
+            "iat": 1592309117,
+            "nbf": 1592309117,
+            "exp": 1624225038,
+            "sub": "23",
+            "user_id": user_id,
+            "scopes": [],
+            "uid": 23
+        }
+        return jwt.encode(payload, key, algorithm='RS256')
+
     def test_update_space(self):
         with app.test_client() as client:
-            client.environ_base['HTTP_AUTHORIZATION'] = jwt.encode({'some': 'payload'}, app.config['SECRET_KEY'], algorithm='HS256')
+            client.environ_base['HTTP_AUTHORIZATION'] = self.build_token(self.key)
             rv = client.get('/api/spaces/1')
             space = json.loads(rv.get_data(as_text=True))
             space['name'] = "UpdateName"
@@ -89,7 +107,7 @@ class SpaceTest(unittest.TestCase):
 
     def test_delete_space(self):
         with app.test_client() as client:
-            client.environ_base['HTTP_AUTHORIZATION'] = jwt.encode({'some': 'payload'}, app.config['SECRET_KEY'], algorithm='HS256')
+            client.environ_base['HTTP_AUTHORIZATION'] = self.build_token(self.key)
             rv = client.delete('/api/spaces/2')
             self.assertEqual(rv.status_code, 200)
 
@@ -104,6 +122,10 @@ class Test(unittest.TestCase):
         app.config['WTF_CSRF_ENABLED'] = False
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + \
                                                 os.path.join('.', 'test.db')
+        self.app = app.test_client()
+        f = open('oauth-private.key', 'r')
+        self.key = f.read()
+        f.close()
 
         self.app = app.test_client()
         db.create_all()
@@ -112,11 +134,15 @@ class Test(unittest.TestCase):
     def test_data_to_create_spaces(self):
         with app.test_client() as client:
 
-            client.environ_base['HTTP_AUTHORIZATION'] = jwt.encode({'some': 'payload'}, app.config['SECRET_KEY'],
-                                                                   algorithm='HS256')
+            client.environ_base['HTTP_AUTHORIZATION'] = SpaceTest.build_token(self.key)
             rv = client.get('/api/spaces/create')
             resp_dict = json.loads(rv.data.decode("utf-8"))
             assert len(resp_dict) == Category.query.count()
+
+            self.app = app.test_client()
+            f = open('oauth-private.key', 'r')
+            self.key = f.read()
+            f.close()
 
             subcategories = []
 
@@ -142,8 +168,7 @@ class Test(unittest.TestCase):
             "width": 1
         }
         with app.test_client() as client:
-            client.environ_base['HTTP_AUTHORIZATION'] = jwt.encode({'some': 'payload'}, app.config['SECRET_KEY'],
-                                                                   algorithm='HS256')
+            client.environ_base['HTTP_AUTHORIZATION'] = SpaceTest.build_token(self.key)
             rv = client.post('/api/spaces/create', data=json.dumps(raw_data), content_type='application/json')
             assert rv.status_code == 201
             resp_dict = json.loads(rv.data.decode("utf-8"))
@@ -173,8 +198,7 @@ class Test(unittest.TestCase):
         ]
 
         with app.test_client() as client:
-            client.environ_base['HTTP_AUTHORIZATION'] = jwt.encode({'some': 'payload'}, app.config['SECRET_KEY'],
-                                                                   algorithm='HS256')
+            client.environ_base['HTTP_AUTHORIZATION'] = SpaceTest.build_token(self.key)
             for data in datas:
                 client.post('/api/spaces/create', data=json.dumps(data), content_type='application/json')
 
