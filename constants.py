@@ -7,6 +7,7 @@ CAT_RECEPCION = "Recepción"
 CAT_INDIVIDUAL = "Individual"
 CAT_COLABORATIVO = "Colaborativo"
 CAT_COFFEE_COM =  "Coffee/Comedor"
+CAT_PUESTO_TRABAJO = "Puesto de Trabajo"
 
 SUBCAT_PEQUENIA = "Pequeña"
 SUBCAT_PEQUENIO = "Pequeño"
@@ -15,14 +16,17 @@ SUBCAT_MEDIANO = "Mediano"
 SUBCAT_GRANDE = "Grande"
 SUBCAT_BANIO = "Baño Individual"
 SUBCAT_BANIO_ACC = "Baño Accesibilidad"
+SUB_CAT_RECEP_P = "Pequeña (más Lounge Pequeño)"
+SUB_CAT_RECEP_G = "Grande (más Lounge Grande)"
 SUBCAT_KITCH = "Kitchenette"
 SUBCAT_SERVIDOR_P = "Servidor Pequeño"
 SUBCAT_SERVIDOR_M = "Servidor Mediano"
 SUBCAT_SERVIDOR_G = "Servidor Grande"
 SUBCAT_PRINT_P = "Print Pequeño"
 SUBCAT_PRINT_G = "Print Grande"
-SUBCAT_PEQUENIO_Q = "Pequeño (QR)"
-SUBCAT_PEQUENIO_P = "Pequeño (Ph)"
+SUBCAT_PEQUENIO_Q = "Pequeño (Quiet Room)"
+SUBCAT_PEQUENIO_P = "Pequeño (Phonebooth)"
+SUBCAT_PT_OPEN_PLAN = "Open Plan"
 
 PERS_SOPORTE = 0.15
 PORC_USO_SOPORTE = (PERS_SOPORTE*100)/(100-(PERS_SOPORTE*100))
@@ -115,13 +119,13 @@ SEED_DATA = {
         }
     },
     CAT_RECEPCION :{
-        SUBCAT_PEQUENIA : {
+        SUB_CAT_RECEP_P : {
             "SUPERFICIE" : None,
             "PERSONAS": None,
             "SUPERFICIE_U": None,
             "PORC_USO": None
         },
-        SUBCAT_GRANDE : {
+        SUB_CAT_RECEP_G : {
             "SUPERFICIE" : None,
             "PERSONAS": None,
             "SUPERFICIE_U": None,
@@ -170,6 +174,14 @@ SEED_DATA = {
             "PORC_USO": None
         },
         SUBCAT_GRANDE : {
+            "SUPERFICIE" : None,
+            "PERSONAS": None,
+            "SUPERFICIE_U": None,
+            "PORC_USO": None
+        }
+    },
+    CAT_PUESTO_TRABAJO: {
+        SUBCAT_PT_OPEN_PLAN: {
             "SUPERFICIE" : None,
             "PERSONAS": None,
             "SUPERFICIE_U": None,
