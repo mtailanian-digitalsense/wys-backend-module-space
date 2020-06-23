@@ -1,7 +1,7 @@
 ################ string constants #########################
 
 CAT_SALA_REU = "Sala Reunión"
-CAT_OF_PRIVADA = "Ofincina Privada"
+CAT_OF_PRIVADA = "Privado"
 CAT_SOPORTE = "Soporte"
 CAT_RECEPCION = "Recepción"
 CAT_INDIVIDUAL = "Individual"
