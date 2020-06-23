@@ -30,7 +30,16 @@ APP_PORT = os.getenv('APP_PORT', 5002)
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql://{DB_USER}:{DB_PASS}@{DB_IP}:{DB_PORT}/{DB_SCHEMA}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY']= 'Th1s1ss3cr3t'
+
+try:
+    f = open('oauth-public.key', 'r')
+    key: str = f.read()
+    f.close()
+    app.config['SECRET_KEY'] = key
+except Exception as terr:
+    app.logger.error(f'Can\'t read public key f{terr}')
+    exit(-1)
+
 app.logger.setLevel(logging.DEBUG)
 db = SQLAlchemy(app)
 
@@ -284,11 +293,17 @@ def token_required(f):
         if not token:
             app.logger.debug("token_required")
             return jsonify({'message': 'a valid token is missing'})
+
         app.logger.debug("Token: " + token)
         try:
-            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
-        except:
-            return jsonify({'message': 'token is invalid'})
+            data = jwt.decode(token, app.config['SECRET_KEY'],
+                              algorithms=['RS256'], audience="1")
+            user_id: int = data['user_id']
+            request.environ['user_id'] = user_id
+        except Exception as err:
+            return jsonify({'message': 'token is invalid', 'error': err})
+        except KeyError as kerr:
+            return jsonify({'message': 'Can\'t find user_id in token', 'error': kerr})
 
         return f(*args, **kwargs)
 
@@ -296,6 +311,7 @@ def token_required(f):
 
 
 @app.route("/api/spaces/spec", methods=['GET'])
+@token_required
 def spec():
     swag = swagger(app)
     swag['info']['version'] = "1.0"
@@ -440,11 +456,11 @@ def get_all_spaces():
         abort(f'Unknown Error f{e}', 500)
 
 
-@app.route('/api/spaces/<space_id>', methods = ['GET', 'PUT', 'DELETE'])
+@app.route('/api/spaces/<space_id>', methods=['GET'])
 @token_required
 def manage_space_by_id(space_id):
     """
-        Manage Space By ID (Show, update and delete)
+        Get Space By ID
         ---
         parameters:
           - in: path
@@ -463,37 +479,152 @@ def manage_space_by_id(space_id):
     """
     try:
         space = Space.query.filter_by(id=space_id).first()
-        if(space is not None):
+        if space is not None:
             if request.method == 'GET':
                 return space.serialize(), 200
-            if request.method == 'PUT':
-                space.name = request.json['name'] if 'name' in request.json else space.name
-                space.model_2d = request.json['model_2d'] if 'model_2d' in request.json else space.model_2d
-                space.model_3d = request.json['model_3d'] if 'model_3d' in request.json else space.model_3d
-                space.height = request.json['height'] if 'height' in request.json else space.height
-                space.width =  request.json['width'] if 'width' in request.json else space.width
-                space.regular =  request.json['regular'] if 'regular' in request.json else space.regular
-                space.up_gap =  request.json['up_gap'] if 'up_gap' in request.json else space.up_gap
-                space.down_gap =  request.json['down_gap'] if 'down_gap' in request.json else space.down_gap
-                space.left_gap = request.json['left_gap'] if 'left_gap' in request.json else space.left_gap
-                space.right_gap = request.json['right_gap'] if 'right_gap' in request.json else space.right_gap
-
-                db.session.commit()
-
-                space_updated = Space.query.filter_by(id=space_id).first()
-                
-                return space_updated.serialize(), 200
-
-            if request.method == 'DELETE':
-                space.active = False
-                db.session.commit()
-
-                return jsonify({'result': 'Space deactivated'}), 200
 
         return '{}', 404
     except Exception as exp:
         app.logger.error(f"Error in database: mesg ->{exp}")
         return exp, 500
+
+
+@app.route('/api/spaces/<space_id>', methods = ['DELETE'])
+@token_required
+def delete_space_by_id(space_id):
+    """
+        Delete Space By ID
+        ---
+        parameters:
+          - in: path
+            name: space_id
+            type: integer
+            description: Space ID
+        tags:
+        - "spaces"
+        responses:
+          200:
+            description: Space Object or deleted message
+          404:
+            description: Space Not Found
+          500:
+            description: "Database error"
+    """
+    try:
+        space = Space.query.filter_by(id=space_id).first()
+        if space is None:
+            return '{}', 404
+        space.active = False
+        db.session.commit()
+        return jsonify({'result': 'Space deactivated'}), 200
+    except Exception as err:
+        app.logger.error(f"Error in database: mesg ->{err}")
+        return err, 500
+
+
+@app.route('/api/spaces/<space_id>', methods=['PUT'])
+def update_space_by_id(space_id):
+    """
+        Update a space by ID
+        ---
+            consumes:
+            - "application/json"
+            produces:
+            - "application/json"
+            tags:
+            - "spaces"
+            parameters:
+            - in: path
+              name: space_id
+              type: integer
+              description: Space ID
+              tags:
+                - "spaces"
+            - in: body
+              name: body
+              required:
+              - name
+              - model_2d
+              - model_3d
+              - height
+              - width
+              - active
+              - regular
+              - up_gap
+              - down_gap
+              - left_gap
+              - right_gap
+              - subcategory_id
+              properties:
+                name:
+                  type: string
+                  description: name of the space
+                model_2d:
+                  type: string
+                  description: Base64 file
+                model_3d:
+                  type: string
+                  description: Base64 file
+                height:
+                  type: number
+                  description: Height of the space
+                width:
+                  type: number
+                  description: width of the space
+                active:
+                  type: boolean
+                  description: indicate if this space is active
+                regular:
+                  type: boolean
+                  description: indicate if this space is a regular space
+                up_gap:
+                  type: number
+                  description: up padding
+                down_gap:
+                  type: number
+                  description: down padding
+                left_gap:
+                  type: number
+                  description: left padding
+                right_gap:
+                  type: number
+                  description: right padding
+                subcategory_id:
+                  type: integer
+                  description: subcategory Id
+
+            responses:
+              200:
+                description: Space Object or deleted message
+              404:
+                description: Space Not Found
+              500:
+                description: "Database error"
+    """
+    try:
+        space = Space.query.filter_by(id=space_id).first()
+        if space is None:
+            return '{}', 404
+        space.name = request.json['name'] if 'name' in request.json else space.name
+        space.model_2d = request.json['model_2d'] if 'model_2d' in request.json else space.model_2d
+        space.model_3d = request.json['model_3d'] if 'model_3d' in request.json else space.model_3d
+        space.height = request.json['height'] if 'height' in request.json else space.height
+        space.width = request.json['width'] if 'width' in request.json else space.width
+        space.regular = request.json['regular'] if 'regular' in request.json else space.regular
+        space.up_gap = request.json['up_gap'] if 'up_gap' in request.json else space.up_gap
+        space.down_gap = request.json['down_gap'] if 'down_gap' in request.json else space.down_gap
+        space.left_gap = request.json['left_gap'] if 'left_gap' in request.json else space.left_gap
+        space.right_gap = request.json['right_gap'] if 'right_gap' in request.json else space.right_gap
+
+        db.session.commit()
+
+        space_updated = Space.query.filter_by(id=space_id).first()
+
+        return space_updated.serialize(), 200
+
+    except Exception as err:
+        app.logger.error(f"Error in database: mesg ->{err}")
+        return err, 500
 
 
 if __name__ == '__main__':
