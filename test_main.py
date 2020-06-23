@@ -6,6 +6,7 @@ from main import Subcategory, Space, app, db, Category, load_constants_seed_data
 
 class SpaceTest(unittest.TestCase):
     def setUp(self):
+        db.session.remove()
         app.config['TESTING'] = True
         app.config['WTF_CSRF_ENABLED'] = False
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + \
@@ -118,6 +119,7 @@ if __name__ == '__main__':
 
 class Test(unittest.TestCase):
     def setUp(self):
+        db.session.remove()
         app.config['TESTING'] = True
         app.config['WTF_CSRF_ENABLED'] = False
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + \
@@ -126,8 +128,6 @@ class Test(unittest.TestCase):
         f = open('oauth-private.key', 'r')
         self.key = f.read()
         f.close()
-
-        self.app = app.test_client()
         db.create_all()
         load_constants_seed_data()
 
