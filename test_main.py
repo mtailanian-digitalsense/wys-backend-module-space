@@ -89,7 +89,7 @@ class SpaceTest(unittest.TestCase):
             "scopes": [],
             "uid": 23
         }
-        return jwt.encode(payload, key, algorithm='RS256')
+        return ('Bearer ' + jwt.encode(payload, key, algorithm='RS256').decode('utf-8')).encode('utf-8')
 
     def test_update_space(self):
         with app.test_client() as client:

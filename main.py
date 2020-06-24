@@ -289,7 +289,8 @@ def token_required(f):
     @wraps(f)
     def decorator(*args, **kwargs):
 
-        token = request.headers.get('Authorization', None)
+        bearer_token = request.headers.get('Authorization', None)
+        token = bearer_token.split(" ")[1]
         if not token:
             app.logger.debug("token_required")
             return jsonify({'message': 'a valid token is missing'})
