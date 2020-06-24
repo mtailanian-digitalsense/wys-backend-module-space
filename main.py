@@ -17,6 +17,7 @@ from flask_swagger import swagger
 from flask_swagger_ui import get_swaggerui_blueprint
 from functools import wraps
 from sqlalchemy.ext.hybrid import hybrid_property
+from flask_cors import CORS
 
 # Loading Config Parameters
 DB_USER = os.getenv('DB_USER', 'wys')
@@ -28,6 +29,7 @@ APP_HOST = os.getenv('APP_HOST', '127.0.0.1')
 APP_PORT = os.getenv('APP_PORT', 5002)
 
 app = Flask(__name__)
+CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql://{DB_USER}:{DB_PASS}@{DB_IP}:{DB_PORT}/{DB_SCHEMA}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
