@@ -290,7 +290,12 @@ def token_required(f):
     def decorator(*args, **kwargs):
 
         bearer_token = request.headers.get('Authorization', None)
-        token = bearer_token.split(" ")[1]
+        try:
+            token = bearer_token.split(" ")[1]
+        except Exception as ierr:
+            app.logger.error(ierr)
+            abort(jsonify({'message': 'a valid bearer token is missing'}), 500)
+
         if not token:
             app.logger.debug("token_required")
             return jsonify({'message': 'a valid token is missing'})
