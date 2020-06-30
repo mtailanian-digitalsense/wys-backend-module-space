@@ -634,6 +634,28 @@ def update_space_by_id(space_id):
         app.logger.error(f"Error in database: mesg ->{err}")
         return err, 500
 
+@app.route('/api/spaces/subcategories', methods=['GET'])
+def get_all_subcategories():
+    """
+        Get all subcategories with their categories (without their associated spaces).
+        ---
+        tags:
+        - "spaces/subcategories"
+        responses:
+          200:
+            description: List of categories + subcategories. 
+          500:
+            description: "Database error"
+    """
+    try:
+        categories =  [c.to_dict() for c in Category.query.all()]
+        for category in categories:
+          for subcategory in category['subcategories']:
+            del subcategory['spaces']
+
+        return jsonify(categories), 200
+    except SQLAlchemyError as e:
+        abort(f'Error getting data: {e}', 500)
 
 if __name__ == '__main__':
     app.run(host = APP_HOST, port = APP_PORT, debug = True)

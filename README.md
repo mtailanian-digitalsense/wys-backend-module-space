@@ -266,6 +266,8 @@ Space Updated Successfully
 
 **Content** : `{error_message}`
 
+### Or
+
 **Condition** :  If server has some error.
 
 **Code** : `500 Internal Error Server`
@@ -296,6 +298,8 @@ Space Updated Successfully
 
 **Content** : `{error_message}`
 
+### Or
+
 **Condition** :  If server has some error.
 
 **Code** : `500 Internal Error Server`
@@ -305,3 +309,63 @@ Space Updated Successfully
 **Method** : `PUT`
 
 **Auth required** : YES
+
+## Show all Subcategories
+
+**URL** : `/api/spaces/subcategories`
+
+**Method** : `GET`
+
+**Auth required** : YES
+
+### Success Response
+
+**Code** : `200 OK`
+
+**Content example**
+
+```json
+[
+    {
+      "id": 1,
+      "name": "Sala Reunión",
+      "subcategories": [
+        {
+          "area": 8.64,
+          "category_id": 1,
+          "id": 1,
+          "name": "Pequeña",
+          "people_capacity": 5,
+          "unit_area": 1.73,
+          "usage_percentage": 0.45
+        },
+        ...
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Privado",
+    "subcategories": [
+      {
+        "area": 11.93,
+        "category_id": 2,
+        "id": 4,
+        "name": "Pequeño",
+        "people_capacity": 1,
+        "unit_area": 11.93,
+        "usage_percentage": null
+      },
+      ...
+    ]
+  }
+  ...
+]
+```
+
+### Error Responses
+
+**Condition** : If an error occurs with the database.
+
+**Code** : `500 Internal Server Error`
+
+**Content** : `{exception_message}`
