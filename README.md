@@ -369,3 +369,90 @@ Space Updated Successfully
 **Code** : `500 Internal Server Error`
 
 **Content** : `{exception_message}`
+
+## Update Subcategories values
+
+**URL** : `/api/spaces/subcategories`
+
+**Required Body** : 
+
+**IMPORTANT**: The only value to include for now is the **unit area**.
+
+```json
+[
+    {
+        "id": 1,
+        "unit_area": 1.73
+    },
+    {
+        "id": 2,
+        "unit_area": 2.16
+    },
+    {
+        "id": 4,
+        "unit_area": 11.93
+    },
+    ...
+]
+```
+
+**Method** : `PUT`
+
+**Auth required** : YES
+
+### Success Response
+
+**Code** : `200 OK`
+
+**Content example**
+
+List of updated subcategories:
+
+```json
+[
+  {
+    "area": 8.64,
+    "category_id": 1,
+    "id": 1,
+    "name": "Pequeña",
+    "people_capacity": 5.0,
+    "unit_area": 1.73,
+    "usage_percentage": 0.45
+  },
+  {
+    "area": 17.29,
+    "category_id": 1,
+    "id": 2,
+    "name": "Mediana",
+    "people_capacity": 8.0,
+    "unit_area": 2.16,
+    "usage_percentage": 0.35
+  },
+  {
+    "area": 11.93,
+    "category_id": 2,
+    "id": 4,
+    "name": "Pequeño",
+    "people_capacity": 1.0,
+    "unit_area": 11.93,
+    "usage_percentage": null
+  },
+  ...
+]
+```
+
+### Error Responses
+
+**Condition** :  If the body data is not included or the body data is not `application/json`.
+
+**Code** : `404 Not Found`
+
+**Content** : `Error: mesg -> {error_message}`
+
+### Or
+
+**Condition** : If an error occurs with the database.
+
+**Code** : `500 Internal Server Error`
+
+**Content** : `{exception_message}`

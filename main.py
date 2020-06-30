@@ -657,5 +657,53 @@ def get_all_subcategories():
     except SQLAlchemyError as e:
         abort(f'Error getting data: {e}', 500)
 
+@app.route('/api/spaces/subcategories', methods=['PUT'])
+def update_subcategories():
+    """
+        Update subcategories values (for now, unit area only)
+        ---
+        produces:
+        - "application/json"
+        tags:
+        - "spaces/subcategories"
+        parameters:
+        - in: "body"
+          name: "body"
+          description: "List of subcategories values to be updated."
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                id: 
+                  type: integer
+                unit_area:
+                  type: number
+        responses:
+          200:
+            description: List of updated subcategories. 
+          400:
+            description: Body isn't application/json or empty body data
+          500:
+            description: "Database error"
+    """
+    if request.is_json:
+        if len(request.json) > 0:
+            try:
+                db.session.bulk_update_mappings(Subcategory, request.json)
+                db.session.commit()
+                ids = [s['id'] for s in request.json]
+                updated_subcategories =  [s.to_dict() for s in db.session.query(Subcategory).filter(Subcategory.id.in_(ids)).all()]
+                for subcategory in updated_subcategories:
+                  del subcategory['spaces']
+
+                return jsonify(updated_subcategories), 200
+            except SQLAlchemyError as e:
+                abort(f'Database error: {e}', 500)
+        else:
+            abort('Body data required', 400)
+    else:
+        abort('Body isn\'t application/json', 400)
+
 if __name__ == '__main__':
     app.run(host = APP_HOST, port = APP_PORT, debug = True)
