@@ -119,6 +119,16 @@ class SpaceTest(unittest.TestCase):
             data = json.loads(rv.data)
             assert len(data) > 0
             self.assertEqual(rv.status_code, 200)
+    def test_update_constants(self):
+        with app.test_client() as client:
+            client.environ_base['HTTP_AUTHORIZATION'] = self.build_token(self.key)
+            sent = [{'id': 1, 'unit_area': 3.14 },
+                    {'id': 2, 'unit_area': 2.9 }]
+            rv = client.put('/api/spaces/subcategories', data = json.dumps(sent), content_type='application/json')
+            subcategories = json.loads(rv.data)
+            self.assertEqual(rv.status_code, 200)
+            for i in range(len(subcategories)):
+                self.assertEqual(True if (subcategories[i]['unit_area'] == sent[i]['unit_area'] and subcategories[i]['id'] == sent[i]['id']) else False, True)
 
 class Test(unittest.TestCase):
     def setUp(self):
