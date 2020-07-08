@@ -466,9 +466,9 @@ def get_all_spaces():
 
 @app.route('/api/spaces/<space_id>', methods=['GET'])
 @token_required
-def manage_space_by_id(space_id):
+def get_space_by_id(space_id):
     """
-        Get Space By ID
+        Get space By ID
         ---
         parameters:
           - in: path
@@ -499,9 +499,9 @@ def manage_space_by_id(space_id):
 
 @app.route('/api/spaces/<space_id>', methods = ['DELETE'])
 @token_required
-def delete_space_by_id(space_id):
+def deactivate_space_by_id(space_id):
     """
-        Delete Space By ID
+        Deactivate space By ID
         ---
         parameters:
           - in: path
@@ -512,7 +512,7 @@ def delete_space_by_id(space_id):
         - "spaces"
         responses:
           200:
-            description: Space Object or deleted message
+            description: Space Object or deactivated message
           404:
             description: Space Not Found
           500:

@@ -106,6 +106,14 @@ and subcategories. One of these categories-subcategories pair must be added to t
 
 ### Error Responses
 
+**Condition** : If required field is missing in the body or the submitted body is not a JSON type.
+
+**Code** : `400 Bad Request`
+
+**Content** : `{error_message}`
+
+### Or
+
 **Condition** :  If server has some error.
 
 **Code** : `500 Internal Error Server`
@@ -201,6 +209,15 @@ If the space's id is 1, then the response will be:
 
 ### Error Responses
 
+
+**Condition** :  The space id was not found.
+
+**Code** : `404 Not Found`
+
+**Content** : `{error_message}`
+
+### Or
+
 **Condition** :  If server has some error.
 
 **Code** : `500 Internal Error Server`
@@ -262,7 +279,7 @@ Space Updated Successfully
 
 **Condition** :  The space id was not found.
 
-**Code** : `400 Bad Request`
+**Code** : `404 Not Found`
 
 **Content** : `{error_message}`
 
@@ -290,7 +307,7 @@ Space Updated Successfully
 
 **Condition** :  The space id was not found.
 
-**Code** : `400 Bad Request`
+**Code** : `404 Not Found`
 
 **Content** : `{error_message}`
 
@@ -437,9 +454,9 @@ List of updated subcategories:
 
 **Condition** :  If the body data is not included or the body data is not `application/json`.
 
-**Code** : `404 Not Found`
+**Code** : `400 Bad Request`
 
-**Content** : `Error: mesg -> {error_message}`
+**Content** : `{error_message}`
 
 ### Or
 
