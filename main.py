@@ -479,7 +479,7 @@ def manage_space_by_id(space_id):
         - "spaces"
         responses:
           200:
-            description: Space Object or deleted message
+            description: Space Object
           404:
             description: Space Not Found
           500:
