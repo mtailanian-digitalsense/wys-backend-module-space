@@ -274,11 +274,7 @@ Space Updated Successfully
 
 **Content** : `{error_message}` 
 
-**Method** : `PUT`
-
-**Auth required** : YES
-
-## Desable a space
+## Deactivate a space
 
 **URL** : `/api/spaces/{space_id}`
 
@@ -305,10 +301,6 @@ Space Updated Successfully
 **Code** : `500 Internal Error Server`
 
 **Content** : `{error_message}` 
-
-**Method** : `PUT`
-
-**Auth required** : YES
 
 ## Show all Subcategories
 

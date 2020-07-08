@@ -119,6 +119,7 @@ class SpaceTest(unittest.TestCase):
             data = json.loads(rv.data)
             assert len(data) > 0
             self.assertEqual(rv.status_code, 200)
+            
     def test_update_constants(self):
         with app.test_client() as client:
             client.environ_base['HTTP_AUTHORIZATION'] = self.build_token(self.key)

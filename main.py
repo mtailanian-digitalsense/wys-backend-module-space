@@ -531,6 +531,7 @@ def delete_space_by_id(space_id):
 
 
 @app.route('/api/spaces/<space_id>', methods=['PUT'])
+@token_required
 def update_space_by_id(space_id):
     """
         Update a space by ID
@@ -635,6 +636,7 @@ def update_space_by_id(space_id):
         return err, 500
 
 @app.route('/api/spaces/subcategories', methods=['GET'])
+@token_required
 def get_all_subcategories():
     """
         Get all subcategories with their categories (without their associated spaces).
@@ -658,6 +660,7 @@ def get_all_subcategories():
         abort(f'Error getting data: {e}', 500)
 
 @app.route('/api/spaces/subcategories', methods=['PUT'])
+@token_required
 def update_subcategories():
     """
         Update subcategories values (for now, unit area only)
