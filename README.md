@@ -465,3 +465,91 @@ List of updated subcategories:
 **Code** : `500 Internal Server Error`
 
 **Content** : `{exception_message}`
+
+
+## Save a new set points of irregular Space 
+
+**URL** : `/api/spaces/{space_id}/points`
+
+**URL Parameters** : 
+
+* `{space_id}=[integer]` where `space_id` is the ID of the irregular space on the server.
+
+**Required Body** :
+
+List of ordered pairs x and y.
+
+````json
+[
+  {
+    "x": [float],
+    "y": [float]
+  },
+  ...
+]
+````
+
+**Method** : `POST`
+
+**Auth required** : YES
+
+### Success Response
+
+**Code** : `201 CREATED`
+
+**Content example**
+
+````json
+[
+  {
+    "id":1,
+    "order":0,
+    "space_id":4,
+    "x":1.2,
+    "y":2.1
+  },
+  {
+    "id":2,
+    "order":1,
+    "space_id":4,
+    "x":3.54,
+    "y":5.6
+  },
+  {
+    "id":3,
+    "order":2,
+    "space_id":4,
+    "x":4.5,
+    "y":2.1
+  }
+]
+````
+
+**NOTE: If a request is sent to a space that already has associated points, these will be removed and replaced in the database by those sent in the body.**
+
+### Error Responses
+
+**Conditions** : 
+* If a required field is missing in the body or the submitted body is not a JSON type.
+* If the space with submited id is not irregular.
+* If the entered list of points in the body is empty.
+
+**Code** : `400 Bad Request`
+
+**Content** : `{error_message}`
+
+### Or
+
+**Conditions** : If the space with submited id was not found.
+
+**Code** : `404 Not Found`
+
+**Content** : `{error_message}`
+
+### Or
+
+**Condition** :  If server has some error.
+
+**Code** : `500 Internal Error Server`
+
+**Content** : `{error_message}`
