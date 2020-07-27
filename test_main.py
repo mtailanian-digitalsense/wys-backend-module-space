@@ -130,6 +130,17 @@ class SpaceTest(unittest.TestCase):
             self.assertEqual(rv.status_code, 200)
             for i in range(len(subcategories)):
                 self.assertEqual(True if (subcategories[i]['unit_area'] == sent[i]['unit_area'] and subcategories[i]['id'] == sent[i]['id']) else False, True)
+    
+    def test_save_space_point(self):
+        with app.test_client() as client:
+            raw_data = [{"x": 1.2, "y":  2.1}, {"x": 3.54, "y":  5.6}, {"x": 4.5, "y":  2.1}]
+            client.environ_base['HTTP_AUTHORIZATION'] = SpaceTest.build_token(self.key)
+            rv = client.post('/api/spaces/4/points', data=json.dumps(raw_data), content_type='application/json')
+            resp = json.loads(rv.data.decode("utf-8"))
+            rv2 = client.post('/api/spaces/1/points', data=json.dumps(raw_data), content_type='application/json')
+            self.assertEqual(rv.status_code, 201)
+            self.assertEqual(3, len(resp))
+            self.assertEqual(rv2.status_code, 400)
 
 class Test(unittest.TestCase):
     def setUp(self):
