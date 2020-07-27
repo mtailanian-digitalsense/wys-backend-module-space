@@ -162,6 +162,9 @@ class Space(db.Model):
     right_gap = db.Column(db.Float, default = 0)
     subcategory_id = db.Column(db.Integer, db.ForeignKey(
         'subcategory.id'), nullable=False)
+    points = db.relationship(
+        "Point",
+        backref="space")
 
     def __init__(self, name, model_2d, model_3d, height, width,
                  regular, active=True, up_gap=0, down_gap=0, left_gap=0, right_gap=0, subcategory_id=0):
@@ -210,7 +213,6 @@ class Space(db.Model):
         """
         Convert to dictionary
         """
-
         obj_dict = {
             'id': self.id,
             'name': self.name,
@@ -227,6 +229,9 @@ class Space(db.Model):
             'subcategory_id' : self.subcategory_id
         }
 
+        if(not self.regular):
+          obj_dict['points'] = self.points
+        
         return obj_dict
 
     def serialize(self):
@@ -235,6 +240,47 @@ class Space(db.Model):
         """
         space_dict = self.to_dict()
         return jsonify(space_dict)
+
+class Point(db.Model):
+    """
+    Point.
+    Represents the ordered pair of a vertex of an irregular space.
+
+    Attributes
+    ----------
+    id: Represent the unique id of a Point
+    x: X coordinate of the vertex.
+    y: Y coordinate of the vertex.
+    order: Number of the order corresponding to the ordered pair.
+    space_id: Parent Space's ID (Many to One)
+    """
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120))
+    x = db.Column(db.Float, nullable=False)
+    y =  db.Column(db.Float, nullable=False)
+    order =  db.Column(db.Integer, nullable=False)
+    space_id = db.Column(db.Integer, db.ForeignKey('space.id'), nullable=False)
+
+    def to_dict(self):
+        """
+        Convert to dictionary
+        """
+
+        obj_dict = {
+            'id': self.id,
+            'x': self.x,
+            'y': self.y,
+            'order': self.order,
+            'space_id': self.space_id}
+
+        return obj_dict
+    
+    def serialize(self):
+        """
+        Serialize to json
+        """
+        return jsonify(self.to_dict())
 
 
 db.create_all() # Create all tables
