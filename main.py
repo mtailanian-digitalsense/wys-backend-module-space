@@ -668,11 +668,13 @@ def update_space_by_id(space_id):
         space.model_3d = request.json['model_3d'] if 'model_3d' in request.json else space.model_3d
         space.height = request.json['height'] if 'height' in request.json else space.height
         space.width = request.json['width'] if 'width' in request.json else space.width
+        space.active = request.json['active'] if 'active' in request.json else space.active
         space.regular = request.json['regular'] if 'regular' in request.json else space.regular
         space.up_gap = request.json['up_gap'] if 'up_gap' in request.json else space.up_gap
         space.down_gap = request.json['down_gap'] if 'down_gap' in request.json else space.down_gap
         space.left_gap = request.json['left_gap'] if 'left_gap' in request.json else space.left_gap
         space.right_gap = request.json['right_gap'] if 'right_gap' in request.json else space.right_gap
+        space.subcategory_id = request.json['subcategory_id'] if 'subcategory_id' in request.json else space.subcategory_id
 
         db.session.commit()
 
