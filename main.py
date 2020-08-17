@@ -162,6 +162,9 @@ class Space(db.Model):
     right_gap = db.Column(db.Float, default = 0)
     subcategory_id = db.Column(db.Integer, db.ForeignKey(
         'subcategory.id'), nullable=False)
+    points = db.relationship(
+        "Point",
+        backref="space")
 
     def __init__(self, name, model_2d, model_3d, height, width,
                  regular, active=True, up_gap=0, down_gap=0, left_gap=0, right_gap=0, subcategory_id=0):
@@ -210,7 +213,6 @@ class Space(db.Model):
         """
         Convert to dictionary
         """
-
         obj_dict = {
             'id': self.id,
             'name': self.name,
@@ -224,9 +226,10 @@ class Space(db.Model):
             'down_gap' :  self.down_gap,
             'left_gap' : self.left_gap,
             'right_gap' : self.right_gap,
+            'points': self.points,
             'subcategory_id' : self.subcategory_id
         }
-
+        
         return obj_dict
 
     def serialize(self):
@@ -235,6 +238,46 @@ class Space(db.Model):
         """
         space_dict = self.to_dict()
         return jsonify(space_dict)
+
+class Point(db.Model):
+    """
+    Point.
+    Represents the ordered pair of a vertex of an irregular space.
+
+    Attributes
+    ----------
+    id: Represent the unique id of a Point
+    x: X coordinate of the vertex.
+    y: Y coordinate of the vertex.
+    order: Number of the order corresponding to the ordered pair.
+    space_id: Parent Space's ID (Many to One)
+    """
+
+    id = db.Column(db.Integer, primary_key=True)
+    x = db.Column(db.Float, nullable=False)
+    y =  db.Column(db.Float, nullable=False)
+    order =  db.Column(db.Integer, nullable=False)
+    space_id = db.Column(db.Integer, db.ForeignKey('space.id'), nullable=False)
+
+    def to_dict(self):
+        """
+        Convert to dictionary
+        """
+
+        obj_dict = {
+            'id': self.id,
+            'x': self.x,
+            'y': self.y,
+            'order': self.order,
+            'space_id': self.space_id}
+
+        return obj_dict
+    
+    def serialize(self):
+        """
+        Serialize to json
+        """
+        return jsonify(self.to_dict())
 
 
 db.create_all() # Create all tables
@@ -327,6 +370,12 @@ def spec():
     swag['tags'] = [{
         "name": "spaces",
         "description": "Methods to configure spaces"
+    },{
+        "name": "spaces/subcategories",
+        "description": "Methods to configure spaces subcategories"
+    },{
+        "name": "spaces/points",
+        "description": "Methods to configure spaces points"
     }]
     return jsonify(swag)
 
@@ -636,6 +685,81 @@ def update_space_by_id(space_id):
     except Exception as err:
         app.logger.error(f"Error in database: mesg ->{err}")
         return err, 500
+
+@app.route('/api/spaces/<space_id>/points', methods=['POST'])
+@token_required
+def save_space_points_by_id(space_id):
+    """
+        Save points of irregular space By ID
+        ---
+        parameters:
+          - in: path
+            name: space_id
+            type: integer
+            description: Irregular Space ID
+          - in: body
+            name: body
+            required: true
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  x:
+                    type: number
+                    format: float
+                    description: X coordinate of the vertex/point.
+                  y:
+                    type: number
+                    format: float
+                    description: Y coordinate of the vertex/point.
+        tags:
+        - "spaces/points"
+        responses:
+          200:
+            description: Saved Points list.
+          400:
+            description: Body isn't application/json, the space isn't irregular or empty body list
+          404:
+            description: Space Not Found
+          500:
+            description: Internal server error or Database error
+    """
+    try:
+      if request.is_json:
+        space = Space.query.get(space_id)
+        if space is None:
+          return 'Error: Space Not Found', 404
+        elif space.regular:
+          return 'Bad Request: The sent ID corresponds to a regular space', 400
+        elif len(request.json) == 0:
+          return 'Bad Request: The entered list of points in the body is empty', 400
+        elif any({'x','y'} != data.keys() for data in request.json):
+          return "Bad Request: A required field is missing in the body", 400
+        
+        if len(space.points) > 0:
+          for point in space.points:
+            p = Point.query.get(point.id)
+            db.session.delete(p)
+            db.session.commit()
+
+        for i in range(len(request.json)):
+          point = Point(**request.json[i])
+          point.order = i
+          space.points.append(point)
+
+        db.session.commit()
+
+        points =  [p.to_dict() for p in space.points]
+
+        return jsonify(points), 201
+      else:
+        return 'Body isn\'t application/json', 400
+    except SQLAlchemyError as e:
+      return f'Error getting data: {e}', 500
+    except Exception as exp:
+      app.logger.error(f"Error in server: mesg ->{exp}")
+      return exp, 500
 
 @app.route('/api/spaces/subcategories', methods=['GET'])
 @token_required
