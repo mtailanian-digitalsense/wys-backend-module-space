@@ -226,7 +226,7 @@ class Space(db.Model):
             'down_gap' :  self.down_gap,
             'left_gap' : self.left_gap,
             'right_gap' : self.right_gap,
-            'points': self.points,
+            'points': [point.to_dict() for point in self.points],
             'subcategory_id' : self.subcategory_id
         }
         
