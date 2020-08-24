@@ -37,7 +37,12 @@ SUBCAT_COFFEE = "Coffee point"
 SUBCAT_GUARDADO_SB = "Guardado Simple Bajo"
 SUBCAT_GUARDADO_SA = "Guardado Simple Alto"
 SUBCAT_LOCKER = "Locker"
-SUBCAT_ESPECIALES = "Sala capacitación/Taller/mindbreak/Brainstorming/Espacio Personalizable/Tarima"
+SUBCAT_SALA_CAP = "Sala capacitación"
+SUBCAT_TALLER = "Taller"
+SUBCAT_MINDBREAK = "Mindbreak"
+SUBCAT_BRANINST = "Brainstorming"
+SUBCAT_TARIMA = "Tarima"
+SUBCAT_ESP_PERS = "Espacio Personalizable"
 
 PERS_SOPORTE = 0.15
 PORC_USO_SOPORTE = (PERS_SOPORTE*100)/(100-(PERS_SOPORTE*100))
@@ -232,7 +237,37 @@ SEED_DATA = {
         }
     },
     CAT_ESPECIALES : {
-        SUBCAT_ESPECIALES : {
+        SUBCAT_SALA_CAP : {
+            "SUPERFICIE" : None,
+            "PERSONAS": None,
+            "SUPERFICIE_U": None,
+            "PORC_USO": None
+        },
+        SUBCAT_TALLER : {
+            "SUPERFICIE" : None,
+            "PERSONAS": None,
+            "SUPERFICIE_U": None,
+            "PORC_USO": None
+        },
+        SUBCAT_MINDBREAK : {
+            "SUPERFICIE" : None,
+            "PERSONAS": None,
+            "SUPERFICIE_U": None,
+            "PORC_USO": None
+        },
+        SUBCAT_BRANINST : {
+            "SUPERFICIE" : None,
+            "PERSONAS": None,
+            "SUPERFICIE_U": None,
+            "PORC_USO": None
+        },
+        SUBCAT_TARIMA : {
+            "SUPERFICIE" : None,
+            "PERSONAS": None,
+            "SUPERFICIE_U": None,
+            "PORC_USO": None
+        },
+        SUBCAT_ESP_PERS : {
             "SUPERFICIE" : None,
             "PERSONAS": None,
             "SUPERFICIE_U": None,
