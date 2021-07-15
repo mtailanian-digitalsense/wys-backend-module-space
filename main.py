@@ -4,13 +4,8 @@ manage all logic for wys Spaces
 
 """
 
-import jwt
-import os
-import logging
-
+import jwt, os, logging, constants
 from sqlalchemy.exc import SQLAlchemyError
-
-import constants
 from flask import Flask, jsonify, abort, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_swagger import swagger
@@ -21,16 +16,28 @@ from flask_cors import CORS
 
 # Loading Config Parameters
 DB_USER = os.getenv('DB_USER', 'wys')
+"""Config Parameters"""
 DB_PASS = os.getenv('DB_PASSWORD', 'rac3e/07')
+"""Config Parameters"""
 DB_IP = os.getenv('DB_IP_ADDRESS', '10.2.19.195')
+"""Config Parameters"""
 DB_PORT = os.getenv('DB_PORT', '3307')
+"""Config Parameters"""
 DB_SCHEMA = os.getenv('DB_SCHEMA', 'wys')
+"""Config Parameters"""
 APP_HOST = os.getenv('APP_HOST', '127.0.0.1')
+"""Config Parameters"""
 APP_PORT = os.getenv('APP_PORT', 5002)
+"""Config Parameters"""
 
+# Flask Configurations
 app = Flask(__name__)
+""" Flask configuration"""
 CORS(app)
+
+# SQL Alchemy Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql://{DB_USER}:{DB_PASS}@{DB_IP}:{DB_PORT}/{DB_SCHEMA}"
+"""SQL Alchemy database uri configuration"""
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 try:
@@ -44,11 +51,13 @@ except Exception as terr:
 
 app.logger.setLevel(logging.DEBUG)
 db = SQLAlchemy(app)
+"""var with SQLAlchemy object"""
 
 
 class Category(db.Model):
     """
-    Category.
+    Category
+    ---
     Represent a Categories of Spaces that are used to calc the final area.
 
     Attributes
@@ -87,13 +96,18 @@ class Category(db.Model):
 
 class Subcategory(db.Model):
     """
-    Subcategory.
+    Subcategory
+    ---
     Represent a Subcategory of Spaces that are used to calc the final area.
 
     Attributes
     ----------
     id: Represent the unique id of a Internal SubCategory
     name: Name of a Internal Category
+    area: Area related to a Subcategory
+    people_capacity: People capacity asigned to a Subcategory
+    usage_percentage: Usage percentage asigned to a Subcategory
+    unit_area: Unit area related to a Subcategory
     category_id: Parent Category's ID (Many to One)
     spaces: Spaces associated to this subcategory (One to Many)
     """
@@ -138,14 +152,25 @@ class Subcategory(db.Model):
 
 class Space(db.Model):
     """
-    Space.
+    Space
+    ---
     Represent a WYS Space structure for save in db.
 
     Attributes
     ----------
     id: Represent the unique id of a Space
     name: Name of the Space
-    ...
+    __model_2d: BLOB of the 2D-model 
+    __model_3d: BLOB of the 3D-model 
+    height: space's height
+    width: space's width
+    active: boolean, if it's an active space
+    regular: boolean, if it's a regular space
+    up_gap: Space's up gap, in cms (holgura)
+    down_gap: Space's down gap, in cms (holgura)
+    left_gap: Space's left gap, in cms (holgura)
+    right_gap: Space's right gap, in cms (holgura)
+    subcategory_id: Subcategory id related
     """
 
     id = db.Column(db.Integer, primary_key=True)
@@ -183,6 +208,9 @@ class Space(db.Model):
 
     @hybrid_property
     def model_2d(self):
+        '''
+        If there's model_2D saved, it's decoded and sent
+        '''
         if self.__model_2d is not None:
             return self.__model_2d.decode('utf-8')
         else:
@@ -197,6 +225,9 @@ class Space(db.Model):
 
     @hybrid_property
     def model_3d(self):
+        '''
+        If there's model_3D saved, it's decoded and sent
+        '''
         if self.__model_3d is not None:
             return self.__model_3d.decode('utf-8')
         else:
@@ -242,14 +273,15 @@ class Space(db.Model):
 class Point(db.Model):
     """
     Point.
+    ---
     Represents the ordered pair of a vertex of an irregular space.
 
     Attributes
     ----------
     id: Represent the unique id of a Point
-    x: X coordinate of the vertex.
-    y: Y coordinate of the vertex.
-    order: Number of the order corresponding to the ordered pair.
+    x: X coordinate of the vertex
+    y: Y coordinate of the vertex
+    order: Number of the order corresponding to the ordered pair
     space_id: Parent Space's ID (Many to One)
     """
 
@@ -284,6 +316,9 @@ db.create_all() # Create all tables
 
 
 def load_constants_seed_data():
+    '''
+    To load constants values, it could be DB values or code constants values. 
+    '''
     cat_total_rows = db.session \
         .query(Category) \
         .count()
@@ -331,6 +366,7 @@ load_constants_seed_data()
 
 
 def token_required(f):
+    """Function to get the token for the swagger"""
     @wraps(f)
     def decorator(*args, **kwargs):
 
@@ -364,6 +400,7 @@ def token_required(f):
 @app.route("/api/spaces/spec", methods=['GET'])
 @token_required
 def spec():
+    """To load the swagger app"""
     swag = swagger(app)
     swag['info']['version'] = "1.0"
     swag['info']['title'] = "WYS Space API Service"
@@ -384,17 +421,23 @@ def spec():
 @token_required
 def data_to_create_spaces():
     """
-        Show all categories and subcategories to be attached to a space
+        Show all categories and workspaces to be related to a space
         ---
         produces:
-        - "application/json"
+
+            - "application/json"
+
         tags:
-        - "spaces"
+
+            - "spaces"
+
         responses:
+
             200:
-                description: A list of all categories and their subcategories
+                description: A list of all categories and workspaces
             500:
                 description: Internal Error
+
     """
     try:
         all_spaces_dicts = [space.to_dict() for space in Category.query.all()]
@@ -404,71 +447,154 @@ def data_to_create_spaces():
         return jsonify([])
 
 
+@app.route('/api/spaces/categories', methods=['GET'])
+@token_required
+def categories_spaces():
+    """
+        Show all categories and subcategories to be attached to a space
+        ---
+        produces:
+
+            - "application/json"
+
+        tags:
+
+            - "spaces"
+
+        responses:
+
+            200:
+                description: A list of all categories and their subcategories
+            500:
+                description: Internal Error
+
+    """
+    try:
+        all_cat_dicts = [cat.to_dict() for cat in Category.query.all()]
+        l=[]
+        for cat in all_cat_dicts:
+          d={}
+          check=True
+          if 'id' in cat:
+            d['id']=cat['id']
+            if 'name' in cat:
+              d['name']=cat['name']
+              if 'subcategories' in cat:
+                d['subcategories']=[]
+                for c in cat['subcategories']:
+                  d1={}
+                  if 'id' in c and 'name' in c:
+                    d1['id']=c['id']
+                    d1['name']=c['name']
+                    
+                    if 'spaces' in c and len(c['spaces'])>0:
+                      d1['spaces']=[]
+                      
+                      for space in c['spaces']:
+                        if 'id' in space:
+                          sp = Space.query.filter_by(id=space['id']).first()
+                          if sp is not None:
+                            d1['spaces'].append({
+                              'id': space['id'],
+                              'model_2d': sp.model_2d,
+                              'model_3d': sp.model_3d,
+                              'height': sp.height,
+                              'width': sp.width
+                              })
+                          else: check=False
+
+                        else: check=False
+                    else: check=False
+                    
+                  else: check=False
+                  d['subcategories'].append(d1)
+                   
+              else: check=False
+            else: check=False
+          else: check=False
+
+          if check:
+            l.append(d)
+
+        
+        return jsonify(l),200
+    except Exception as e:
+        abort(f'Error trying to get data: {e}', 500)
+        
+
 @app.route('/api/spaces/create', methods=['POST'])
 @token_required
 def new_space():
     """
         Save a new space
         ---
-        consumes:
-        - "application/json"
+        consumes: 
+
+            - "application/json"
+
         produces:
-        - "application/json"
+
+            - "application/json"
+
         tags:
-        - "spaces"
+
+            - "spaces"
+            
         parameters:
-        - in: "body"
-          name: "body"
-          required:
-          - name
-          - model_2d
-          - model_3d
-          - height
-          - width
-          - active
-          - regular
-          - up_gap
-          - down_gap
-          - left_gap
-          - right_gap
-          - subcategory_id
-          properties:
-            name:
-              type: string
-              description: name of the space
-            model_2d:
-              type: string
-              description: Base64 file
-            model_3d:
-              type: string
-              description: Base64 file
-            height:
-              type: number
-              description: Height of the space
-            width:
-              type: number
-              description: width of the space
-            active:
-              type: boolean
-              description: indicate if this space is active
-            regular:
-              type: boolean
-              description: indicate if this space is a regular space
-            up_gap:
-              type: number
-              description: up padding
-            down_gap:
-              type: number
-              description: down padding
-            left_gap:
-              type: number
-              description: left padding
-            right_gap:
-              type: number
-              description: right padding
-            subcategory_id:
-              type: integer
-              description: subcategory Id
+
+            - in: "body"
+              name: "body"
+              required:
+              - name
+              - model_2d
+              - model_3d
+              - height
+              - width
+              - active
+              - regular
+              - up_gap
+              - down_gap
+              - left_gap
+              - right_gap
+              - subcategory_id
+              properties:
+                name:
+                  type: string
+                  description: name of the space
+                model_2d:
+                  type: string
+                  description: Base64 file
+                model_3d:
+                  type: string
+                  description: Base64 file
+                height:
+                  type: number
+                  description: Height of the space
+                width:
+                  type: number
+                  description: width of the space
+                active:
+                  type: boolean
+                  description: indicate if this space is active
+                regular:
+                  type: boolean
+                  description: indicate if this space is a regular space
+                up_gap:
+                  type: number
+                  description: up padding
+                down_gap:
+                  type: number
+                  description: down padding
+                left_gap:
+                  type: number
+                  description: left padding
+                right_gap:
+                  type: number
+                  description: right padding
+                subcategory_id:
+                  type: integer
+                  description: subcategory Id
+
     """
     if request.is_json:
         try:
@@ -494,14 +620,20 @@ def get_all_spaces():
         Show all spaces
         ---
         produces:
-        - "application/json"
+
+            - "application/json"
+
         tags:
-        - "spaces"
+
+            - "spaces"
+
         responses:
+
             200:
                 description: A list of all spaces
             500:
                 description: Internal Error
+
     """
     try:
         spaces = Space.query.all()
@@ -520,19 +652,25 @@ def get_space_by_id(space_id):
         Get space By ID
         ---
         parameters:
-          - in: path
-            name: space_id
-            type: integer
-            description: Space ID
+
+            - in: path
+              name: space_id
+              type: integer
+              description: Space ID
+
         tags:
-        - "spaces"
+
+            - "spaces"
+
         responses:
-          200:
-            description: Space Object
-          404:
-            description: Space Not Found
-          500:
-            description: "Database error"
+
+            200:
+              description: Space Object
+            404:
+              description: Space Not Found
+            500:
+              description: "Database error"
+
     """
     try:
         space = Space.query.filter_by(id=space_id).first()
@@ -553,19 +691,25 @@ def deactivate_space_by_id(space_id):
         Deactivate space By ID
         ---
         parameters:
-          - in: path
-            name: space_id
-            type: integer
-            description: Space ID
+
+            - in: path
+              name: space_id
+              type: integer
+              description: Space ID
+
         tags:
-        - "spaces"
+
+            - "spaces"
+
         responses:
-          200:
-            description: Space Object or deactivated message
-          404:
-            description: Space Not Found
-          500:
-            description: "Database error"
+
+            200:
+              description: Space Object or deactivated message
+            404:
+              description: Space Not Found
+            500:
+              description: "Database error"
+
     """
     try:
         space = Space.query.filter_by(id=space_id).first()
@@ -585,13 +729,20 @@ def update_space_by_id(space_id):
     """
         Update a space by ID
         ---
-            consumes:
+        consumes:
+
             - "application/json"
-            produces:
+
+        produces:
+
             - "application/json"
-            tags:
+
+        tags:
+
             - "spaces"
-            parameters:
+            
+        parameters:
+
             - in: path
               name: space_id
               type: integer
@@ -651,13 +802,15 @@ def update_space_by_id(space_id):
                   type: integer
                   description: subcategory Id
 
-            responses:
-              200:
-                description: Space Object or deleted message
-              404:
-                description: Space Not Found
-              500:
-                description: "Database error"
+        responses:
+
+            200:
+              description: Space Object or deleted message
+            404:
+              description: Space Not Found
+            500:
+              description: "Database error"
+
     """
     try:
         space = Space.query.filter_by(id=space_id).first()
@@ -693,37 +846,43 @@ def save_space_points_by_id(space_id):
         Save points of irregular space By ID
         ---
         parameters:
-          - in: path
-            name: space_id
-            type: integer
-            description: Irregular Space ID
-          - in: body
-            name: body
-            required: true
-            schema:
-              type: array
-              items:
-                type: object
-                properties:
-                  x:
-                    type: number
-                    format: float
-                    description: X coordinate of the vertex/point.
-                  y:
-                    type: number
-                    format: float
-                    description: Y coordinate of the vertex/point.
+
+            - in: path
+              name: space_id
+              type: integer
+              description: Irregular Space ID
+            - in: body
+              name: body
+              required: true
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    x:
+                      type: number
+                      format: float
+                      description: X coordinate of the vertex/point.
+                    y:
+                      type: number
+                      format: float
+                      description: Y coordinate of the vertex/point.
+
         tags:
-        - "spaces/points"
+
+            - "spaces/points"
+
         responses:
-          200:
-            description: Saved Points list.
-          400:
-            description: Body isn't application/json, the space isn't irregular or empty body list
-          404:
-            description: Space Not Found
-          500:
-            description: Internal server error or Database error
+
+            200:
+              description: Saved Points list.
+            400:
+              description: Body isn't application/json, the space isn't irregular or empty body list
+            404:
+              description: Space Not Found
+            500:
+              description: Internal server error or Database error
+
     """
     try:
       if request.is_json:
@@ -768,12 +927,16 @@ def get_all_subcategories():
         Get all subcategories with their categories (without their associated spaces).
         ---
         tags:
-        - "spaces/subcategories"
+
+            - "spaces/subcategories"
+
         responses:
-          200:
-            description: List of categories + subcategories. 
-          500:
-            description: "Database error"
+
+            200:
+              description: List of categories + subcategories. 
+            500:
+              description: "Database error"
+
     """
     try:
         categories =  [c.to_dict() for c in Category.query.all()]
@@ -792,29 +955,37 @@ def update_subcategories():
         Update subcategories values (for now, unit area only)
         ---
         produces:
-        - "application/json"
+
+            - "application/json"
+
         tags:
-        - "spaces/subcategories"
+
+            - "spaces/subcategories"
+
         parameters:
-        - in: "body"
-          name: "body"
-          description: "List of subcategories values to be updated."
-          schema:
-            type: array
-            items:
-              type: object
-              properties:
-                id: 
-                  type: integer
-                unit_area:
-                  type: number
+
+            - in: "body"
+              name: "body"
+              description: "List of subcategories values to be updated."
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: 
+                      type: integer
+                    unit_area:
+                      type: number
+
         responses:
-          200:
-            description: List of updated subcategories. 
-          400:
-            description: Body isn't application/json or empty body data
-          500:
-            description: "Database error"
+
+            200:
+              description: List of updated subcategories. 
+            400:
+              description: Body isn't application/json or empty body data
+            500:
+              description: "Database error"
+
     """
     if request.is_json:
         if len(request.json) > 0:
