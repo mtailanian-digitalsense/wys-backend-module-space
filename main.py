@@ -496,6 +496,7 @@ def categories_spaces():
                           if sp is not None:
                             d1['spaces'].append({
                               'id': space['id'],
+                              'name': sp.name,
                               'model_2d': sp.model_2d,
                               'model_3d': sp.model_3d,
                               'height': sp.height,
