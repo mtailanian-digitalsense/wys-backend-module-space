@@ -739,8 +739,8 @@ def categories_spaces():
                               'name': sp.name,
                               'model_2d': sp.model_2d,
                               'model_3d': sp.model_3d,
-                              'height': sp.height*m_px*factor,
-                              'width': sp.width*m_px*factor
+                              'height': sp.height*m_px*0.0085439712403561,
+                              'width': sp.width*m_px*0.00866888126409497
                               })
                           else: check=False
 
