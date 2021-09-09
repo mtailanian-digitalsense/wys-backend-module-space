@@ -70,6 +70,7 @@ db = SQLAlchemy(app)
 """var with SQLAlchemy object"""
 
 m_px = 3779.57517575025
+factor=0.00733039695252227
 
 class Category(db.Model):
     """
@@ -738,8 +739,8 @@ def categories_spaces():
                               'name': sp.name,
                               'model_2d': sp.model_2d,
                               'model_3d': sp.model_3d,
-                              'height': sp.height*m_px,
-                              'width': sp.width*m_px
+                              'height': sp.height*m_px*factor,
+                              'width': sp.width*m_px*factor
                               })
                           else: check=False
 
