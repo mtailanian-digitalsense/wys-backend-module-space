@@ -13,13 +13,19 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from functools import wraps
 from sqlalchemy.ext.hybrid import hybrid_property
 from flask_cors import CORS
+from PIL import Image
+import requests
+from io import BytesIO
+import json
+import base64
+from shapely.geometry.polygon import Polygon
 
 # Loading Config Parameters
 DB_USER = os.getenv('DB_USER', 'wys')
 """Config Parameters"""
 DB_PASS = os.getenv('DB_PASSWORD', 'rac3e/07')
 """Config Parameters"""
-DB_IP = os.getenv('DB_IP_ADDRESS', '10.2.19.195')
+DB_IP = os.getenv('DB_IP_ADDRESS', '10.2.14.195')
 """Config Parameters"""
 DB_PORT = os.getenv('DB_PORT', '3307')
 """Config Parameters"""
@@ -29,6 +35,16 @@ APP_HOST = os.getenv('APP_HOST', '127.0.0.1')
 """Config Parameters"""
 APP_PORT = os.getenv('APP_PORT', 5002)
 """Config Parameters"""
+
+# Buildings module info
+BUILDINGS_MODULE_HOST = os.getenv('BUILDINGS_MODULE_HOST', '127.0.0.1')
+""" Connect with building module"""
+BUILDINGS_MODULE_PORT = os.getenv('BUILDINGS_MODULE_PORT', 5004)
+""" Connect with building module"""
+BUILDINGS_MODULE_API = os.getenv('BUILDINGS_MODULE_API', '/api/buildings/')
+""" Connect with building module"""
+BUILDINGS_URL = f"http://{BUILDINGS_MODULE_HOST}:{BUILDINGS_MODULE_PORT}"
+""" Connect with building module"""
 
 # Flask Configurations
 app = Flask(__name__)
@@ -53,6 +69,7 @@ app.logger.setLevel(logging.DEBUG)
 db = SQLAlchemy(app)
 """var with SQLAlchemy object"""
 
+m_px = 3779.57517575025
 
 class Category(db.Model):
     """
@@ -416,6 +433,218 @@ def spec():
     }]
     return jsonify(swag)
 
+class FloorLocation:
+    """Spatial location of modules
+    ___
+    """
+
+    def __init__(self):
+        self.width_m = 0.0
+        self.height_m = 0.0
+        self.x_0 = 0
+        self.y_0 = 0
+        self.x_pixel_m = 0
+        self.y_pixel_m = 0
+
+    def to_dict(self):
+        """
+        Convert to dictionary
+        """
+        return {
+            'width_m': self.width_m,
+            'height_m': self.height_m,
+            'x_pixel_m': self.x_pixel_m,
+            'y_pixel_m': self.y_pixel_m
+        }  
+class SpaceLocation:
+    """Spatial location of modules
+    ___
+
+    """
+
+    def __init__(self):
+        self.position_x = 0
+        self.position_y = 0
+        self.width_p = 0
+        self.height_p = 0
+        self.rotation = 0
+        self.space_id = 0
+        self.image = ""
+
+    def to_dict(self):
+        """
+        Convert to dictionary
+        """
+        return {
+            'position_x': self.position_x,
+            'position_y': self.position_y,
+            'width': self.width_p,
+            'height': self.height_p,
+            'rotation': self.rotation,
+            'space_id': self.space_id,
+            'image': self.image
+        }
+def get_image_size(link):
+    """
+    Get the size of a image in pixels
+    ___
+    parameters:
+
+        link: link of a image
+
+    return:
+
+        width and height in pixels
+    """
+
+    # Get image from internet
+    try:
+        resp = requests.get(link)
+        image: Image = Image.open(BytesIO(resp.content))
+        return image.width, image.height
+
+    except Exception as e:
+        raise e
+
+
+def get_extremes_m(polygons: []):
+    """
+    Returns the extremes points in meters
+    ___
+    parameters:
+
+        polygons: list with all floor polygons
+
+    return:
+
+        extreme points in meters.
+    """
+    width = 0.0
+    height = 0.0
+    points = []
+
+    x_coords = []
+    y_coords = []
+
+    for pol in polygons:
+        points += pol['points']
+
+    for point in points:
+        # Get all X points and save in a list
+        x_coords.append(point['x'])
+        # Get all Y points and save in a list
+        y_coords.append(point['y'])
+
+    # Getting max and min points
+
+    x_max = max(x_coords)
+    y_max = max(y_coords)
+
+    x_min = min(x_coords)
+    y_min = min(y_coords)
+
+    return x_min, y_min, x_max, y_max
+  
+def init_floor(floor_dict: dict):
+    """ Return the location of objects in the floor
+    parameters:
+
+        floor_dict: data given to smart layout
+
+    return:
+
+        FloorLocation object
+    """
+
+    # Init floor
+    floor_loc = FloorLocation()
+
+    # Polygons or elements of floor
+
+    floor_polygons = floor_dict['selected_floor']['polygons']
+
+    # Give width and length of a floor
+
+    x_min, y_min, x_max, y_max = get_extremes_m(floor_polygons)
+
+    floor_loc.width_m = (x_max - x_min) / 100.0
+    floor_loc.height_m = (y_max - y_min) / 100.0
+
+    # Give give the most left/up point
+    floor_loc.x_0, floor_loc.y_0 = x_min / 100.0, y_max / 100.0
+
+    # Get Pixel/Meters relation for a floor
+    try:
+
+        width_p, height_p = get_image_size(floor_dict['selected_floor']['image_link'])
+
+    except Exception as e:
+        raise e
+
+    floor_loc.x_pixel_m = width_p * 1.0 / floor_loc.width_m  # pixels/meters
+    floor_loc.y_pixel_m = height_p * 1.0 / floor_loc.height_m  # pixels/meters
+
+    return floor_loc
+
+'''
+def transform_coords(floor_dict: dict, coordinates: []):
+    """Transform coordinates into pixels
+    ___
+    parameters:
+        floor_dict: data given to smart layout
+        coordinates: list of all spaces with their coordinates
+
+    return:
+
+        spaces and floor elements with their coordinates in pixels
+    """
+    # Init floor
+    floor_loc = init_floor(floor_dict)
+
+    # build a dictionary of type of spaces
+    spaces_dict = {}
+    for space in floor_dict['workspaces']:
+        spaces_dict[space['name']] = space
+
+    # Save spaces here
+    spaces = []
+
+    # Read all spaces given by smart layout
+    for space in coordinates:
+        space_loc = SpaceLocation()
+        space_name = space[0]
+        xpos_m = space[2]
+        ypos_m = space[3]
+        rot = space[4]
+
+        # (point_m - origin) multiplied for the pixel/meters reason.
+        space_loc.position_x = (xpos_m - floor_loc.x_0) * floor_loc.x_pixel_m
+
+        # Y coordinate is always positive
+        space_loc.position_y = (ypos_m - floor_loc.y_0) * -1 * floor_loc.y_pixel_m
+        space_loc.rotation = rot
+
+        # Resizing image
+
+        # Get width and height in meters
+        space_info = spaces_dict[space_name]
+
+        space_width_m = space_info['width']
+        space_height_m = space_info['height']
+
+        space_width_p = space_width_m * floor_loc.x_pixel_m
+        space_height_p = space_height_m * floor_loc.y_pixel_m
+
+        space_loc.width_p = space_width_p
+        space_loc.height_p = space_height_p
+
+
+        spaces.append(space_loc.to_dict())
+    
+
+    return spaces
+
+'''
 
 @app.route('/api/spaces/create', methods=['GET'])
 @token_required
@@ -446,7 +675,17 @@ def data_to_create_spaces():
         abort(f'Error trying to get data: {e}', 500)
         return jsonify([])
 
-
+def get_floor_polygons_by_ids(building_id, floor_id, token):
+    """Returns the polygons by buildingId and floorId"""
+    headers = {'Authorization': token}
+    api_url = BUILDINGS_URL + BUILDINGS_MODULE_API + str(building_id) + '/floors/'+ str(floor_id) + '/polygons'
+    rv = requests.get(api_url, headers=headers)
+    if rv.status_code == 200:
+        return json.loads(rv.text)
+    elif rv.status_code == 500:
+        raise Exception("Cannot connect to the buildings module")
+    return None
+  
 @app.route('/api/spaces/categories', methods=['GET'])
 @token_required
 def categories_spaces():
@@ -499,6 +738,220 @@ def categories_spaces():
                               'name': sp.name,
                               'model_2d': sp.model_2d,
                               'model_3d': sp.model_3d,
+                              'height': sp.height*m_px,
+                              'width': sp.width*m_px
+                              })
+                          else: check=False
+
+                        else: check=False
+                    else: check=False
+                    
+                  else: check=False
+                  d['subcategories'].append(d1)
+                   
+              else: check=False
+            else: check=False
+          else: check=False
+
+          if check:
+            l.append(d)
+
+        
+        return jsonify(l),200
+    except Exception as e:
+        abort(f'Error trying to get data: {e}', 500)
+
+'''
+
+def categories_spaces():
+    """
+        Show all categories and subcategories to be attached to a space
+        ---
+        produces:
+
+            - "application/json"
+        parameters:
+          - in: "body"
+            name: "body"
+            required:
+            - selected_floor
+            - workspaces
+        properties:
+          selected_floor:
+            type: object
+            description: Data of the floor selected by the user.
+            properties:
+              id:
+                type: integer
+                description: Unique ID of each building floor.
+              active:
+                type: boolean
+                description: indicate if this floor is active.
+              wys_id:
+                type: string
+                description: Unique internal ID of each building floor.
+              rent_value:
+                type: number
+                format: float
+                description: Rent value of the floor
+              m2:
+                type: number
+                format: float
+                description: Square meter value of the floor.
+              elevators_number:
+                type: integer
+                description: Numbers of elevators in the floor.
+              image_link:
+                type: string
+                description: Link of the floor image.
+              building_id:
+                type: integer
+                description: Unique ID of each building associated to this floor.
+          workspaces:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: integer
+                  description: Unique ID of each space.
+                quantity:
+                  type: integer
+                  description: Quantity of the space
+                name:
+                  type: string
+                  description: Name of the space
+                height:
+                  type: number
+                  description: Height of the space
+                width:
+                  type: number
+                  description: width of the space
+                active:
+                  type: boolean
+                  description: indicate if this space is active
+                regular:
+                  type: boolean
+                  description: indicate if this space is a regular space
+                up_gap:
+                  type: number
+                  description: up padding
+                down_gap:
+                  type: number
+                  description: down padding
+                left_gap:
+                  type: number
+                  description: left padding
+                right_gap:
+                  type: number
+                  description: right padding
+                subcategory_id:
+                  type: integer
+                  description: subcategory Id
+                points:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      x:
+                        type: number
+                        format: float
+                        description: X coordinate of the vertex/point.
+                      y:
+                        type: number
+                        format: float
+                        description: Y coordinate of the vertex/point.
+        tags:
+
+            - "spaces"
+
+        responses:
+
+            200:
+                description: A list of all categories and their subcategories
+            500:
+                description: Internal Error
+
+    """
+    req_params = {'selected_floor', 'workspaces'}
+    #req_params = ["layout_workspaces", "layout_data"]
+    for param in req_params:
+      if param not in request.json.keys():
+        abort(400, description=f"{param} isn't in body")
+    floor = request.json['selected_floor']
+    floor_params = {'id', 'wys_id','rent_value','m2','elevators_number','image_link','active','building_id'}
+    if floor.keys() != floor_params:
+      return "A floor data field is missing in the body", 400
+
+    workspaces = request.json['workspaces']
+    if len(workspaces) == 0:
+        return "No spaces were entered in the body.", 400
+    workspace_params = {'id','quantity','name','height','width','active','regular','up_gap','down_gap','left_gap',
+                            'right_gap','subcategory_id','points'}
+    categories =  [c.to_dict() for c in Category.query.all()]
+    for category in categories:
+      for subcategory in category['subcategories']:
+        del subcategory['spaces']
+    subcategories = categories
+
+    for workspace in workspaces:
+      if workspace.keys() != workspace_params:
+        return "A space data field is missing in the body", 400
+      found = False
+      for category in subcategories:
+        for subcategory in category['subcategories']:
+          if subcategory['id'] == workspace['subcategory_id']:
+            workspace['category_id'] = category['id']
+            found = True
+            break
+        if found:
+          break
+      if not found:
+        return "A Space subcategory doesn't exist", 404
+
+      #project = get_project_by_id(project_id, token)
+      #if project is None:
+        #return "The project doesn't exist", 404
+      token = request.headers.get('Authorization', None)
+      floor_polygons = get_floor_polygons_by_ids(floor['building_id'], floor['id'], token)
+      if floor_polygons is None or len(floor_polygons) == 0:
+        return "The floor doesn't exist or not have a polygons.", 404
+      floor['polygons'] = floor_polygons  
+      layout_data = {'selected_floor': floor, 'workspaces': workspaces}
+      workspaces_coords, floor_elements = transform_coords(layout_data, layout_workspaces)
+    #layout_workspaces = request.json["layout_workspaces"]
+    #layout_data = request.json["layout_data"]
+
+    try:
+        all_cat_dicts = [cat.to_dict() for cat in Category.query.all()]
+        l=[]
+        for cat in all_cat_dicts:
+          d={}
+          check=True
+          if 'id' in cat:
+            d['id']=cat['id']
+            if 'name' in cat:
+              d['name']=cat['name']
+              if 'subcategories' in cat:
+                d['subcategories']=[]
+                for c in cat['subcategories']:
+                  d1={}
+                  if 'id' in c and 'name' in c:
+                    d1['id']=c['id']
+                    d1['name']=c['name']
+                    
+                    if 'spaces' in c and len(c['spaces'])>0:
+                      d1['spaces']=[]
+                      
+                      for space in c['spaces']:
+                        if 'id' in space:
+                          sp = Space.query.filter_by(id=space['id']).first()
+                          if sp is not None:
+                            d1['spaces'].append({
+                              'id': space['id'],
+                              'name': sp.name,
+                              'model_2d': sp.model_2d,
+                              'model_3d': sp.model_3d,
                               'height': sp.height,
                               'width': sp.width
                               })
@@ -521,7 +974,7 @@ def categories_spaces():
         return jsonify(l),200
     except Exception as e:
         abort(f'Error trying to get data: {e}', 500)
-        
+'''        
 
 @app.route('/api/spaces/create', methods=['POST'])
 @token_required
