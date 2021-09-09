@@ -5,6 +5,7 @@ flask_swagger_ui
 mysqlclient
 Pillow
 requests
+shapely
 pyjwt
 gunicorn
 cryptography
