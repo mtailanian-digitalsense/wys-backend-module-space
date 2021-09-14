@@ -21,13 +21,13 @@ import base64
 from shapely.geometry.polygon import Polygon
 
 # Loading Config Parameters
-DB_USER = os.getenv('DB_USER', 'wys')
+DB_USER = os.getenv('DB_USER', 'root') #wys
 """Config Parameters"""
-DB_PASS = os.getenv('DB_PASSWORD', 'rac3e/07')
+DB_PASS = os.getenv('DB_PASSWORD', 'root') #rac3e/07
 """Config Parameters"""
-DB_IP = os.getenv('DB_IP_ADDRESS', '10.2.14.195')
+DB_IP = os.getenv('DB_IP_ADDRESS','localhost') #'10.2.14.195')
 """Config Parameters"""
-DB_PORT = os.getenv('DB_PORT', '3307')
+DB_PORT = os.getenv('DB_PORT', '3306')#3307
 """Config Parameters"""
 DB_SCHEMA = os.getenv('DB_SCHEMA', 'wys')
 """Config Parameters"""
@@ -508,7 +508,7 @@ def get_image_size(link):
         raise e
 
 
-def get_extremes_m(polygons: []):
+def get_extremes_m(polygons):
     """
     Returns the extremes points in meters
     ___
@@ -687,9 +687,9 @@ def get_floor_polygons_by_ids(building_id, floor_id, token):
         raise Exception("Cannot connect to the buildings module")
     return None
   
-@app.route('/api/spaces/categories', methods=['GET'])
+@app.route('/api/spaces/categories_old', methods=['GET'])
 @token_required
-def categories_spaces():
+def categories_spaces_old():
     """
         Show all categories and subcategories to be attached to a space
         ---
@@ -699,7 +699,7 @@ def categories_spaces():
 
         tags:
 
-            - "spaces"
+            - "old"
 
         responses:
 
@@ -709,220 +709,6 @@ def categories_spaces():
                 description: Internal Error
 
     """
-    try:
-        all_cat_dicts = [cat.to_dict() for cat in Category.query.all()]
-        l=[]
-        for cat in all_cat_dicts:
-          d={}
-          check=True
-          if 'id' in cat:
-            d['id']=cat['id']
-            if 'name' in cat:
-              d['name']=cat['name']
-              if 'subcategories' in cat:
-                d['subcategories']=[]
-                for c in cat['subcategories']:
-                  d1={}
-                  if 'id' in c and 'name' in c:
-                    d1['id']=c['id']
-                    d1['name']=c['name']
-                    
-                    if 'spaces' in c and len(c['spaces'])>0:
-                      d1['spaces']=[]
-                      
-                      for space in c['spaces']:
-                        if 'id' in space:
-                          sp = Space.query.filter_by(id=space['id']).first()
-                          if sp is not None:
-                            d1['spaces'].append({
-                              'id': space['id'],
-                              'name': sp.name,
-                              'model_2d': sp.model_2d,
-                              'model_3d': sp.model_3d,
-                              'height': sp.height*m_px*0.0085439712403561,
-                              'width': sp.width*m_px*0.00866888126409497
-                              })
-                          else: check=False
-
-                        else: check=False
-                    else: check=False
-                    
-                  else: check=False
-                  d['subcategories'].append(d1)
-                   
-              else: check=False
-            else: check=False
-          else: check=False
-
-          if check:
-            l.append(d)
-
-        
-        return jsonify(l),200
-    except Exception as e:
-        abort(f'Error trying to get data: {e}', 500)
-
-'''
-
-def categories_spaces():
-    """
-        Show all categories and subcategories to be attached to a space
-        ---
-        produces:
-
-            - "application/json"
-        parameters:
-          - in: "body"
-            name: "body"
-            required:
-            - selected_floor
-            - workspaces
-        properties:
-          selected_floor:
-            type: object
-            description: Data of the floor selected by the user.
-            properties:
-              id:
-                type: integer
-                description: Unique ID of each building floor.
-              active:
-                type: boolean
-                description: indicate if this floor is active.
-              wys_id:
-                type: string
-                description: Unique internal ID of each building floor.
-              rent_value:
-                type: number
-                format: float
-                description: Rent value of the floor
-              m2:
-                type: number
-                format: float
-                description: Square meter value of the floor.
-              elevators_number:
-                type: integer
-                description: Numbers of elevators in the floor.
-              image_link:
-                type: string
-                description: Link of the floor image.
-              building_id:
-                type: integer
-                description: Unique ID of each building associated to this floor.
-          workspaces:
-            type: array
-            items:
-              type: object
-              properties:
-                id:
-                  type: integer
-                  description: Unique ID of each space.
-                quantity:
-                  type: integer
-                  description: Quantity of the space
-                name:
-                  type: string
-                  description: Name of the space
-                height:
-                  type: number
-                  description: Height of the space
-                width:
-                  type: number
-                  description: width of the space
-                active:
-                  type: boolean
-                  description: indicate if this space is active
-                regular:
-                  type: boolean
-                  description: indicate if this space is a regular space
-                up_gap:
-                  type: number
-                  description: up padding
-                down_gap:
-                  type: number
-                  description: down padding
-                left_gap:
-                  type: number
-                  description: left padding
-                right_gap:
-                  type: number
-                  description: right padding
-                subcategory_id:
-                  type: integer
-                  description: subcategory Id
-                points:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      x:
-                        type: number
-                        format: float
-                        description: X coordinate of the vertex/point.
-                      y:
-                        type: number
-                        format: float
-                        description: Y coordinate of the vertex/point.
-        tags:
-
-            - "spaces"
-
-        responses:
-
-            200:
-                description: A list of all categories and their subcategories
-            500:
-                description: Internal Error
-
-    """
-    req_params = {'selected_floor', 'workspaces'}
-    #req_params = ["layout_workspaces", "layout_data"]
-    for param in req_params:
-      if param not in request.json.keys():
-        abort(400, description=f"{param} isn't in body")
-    floor = request.json['selected_floor']
-    floor_params = {'id', 'wys_id','rent_value','m2','elevators_number','image_link','active','building_id'}
-    if floor.keys() != floor_params:
-      return "A floor data field is missing in the body", 400
-
-    workspaces = request.json['workspaces']
-    if len(workspaces) == 0:
-        return "No spaces were entered in the body.", 400
-    workspace_params = {'id','quantity','name','height','width','active','regular','up_gap','down_gap','left_gap',
-                            'right_gap','subcategory_id','points'}
-    categories =  [c.to_dict() for c in Category.query.all()]
-    for category in categories:
-      for subcategory in category['subcategories']:
-        del subcategory['spaces']
-    subcategories = categories
-
-    for workspace in workspaces:
-      if workspace.keys() != workspace_params:
-        return "A space data field is missing in the body", 400
-      found = False
-      for category in subcategories:
-        for subcategory in category['subcategories']:
-          if subcategory['id'] == workspace['subcategory_id']:
-            workspace['category_id'] = category['id']
-            found = True
-            break
-        if found:
-          break
-      if not found:
-        return "A Space subcategory doesn't exist", 404
-
-      #project = get_project_by_id(project_id, token)
-      #if project is None:
-        #return "The project doesn't exist", 404
-      token = request.headers.get('Authorization', None)
-      floor_polygons = get_floor_polygons_by_ids(floor['building_id'], floor['id'], token)
-      if floor_polygons is None or len(floor_polygons) == 0:
-        return "The floor doesn't exist or not have a polygons.", 404
-      floor['polygons'] = floor_polygons  
-      layout_data = {'selected_floor': floor, 'workspaces': workspaces}
-      workspaces_coords, floor_elements = transform_coords(layout_data, layout_workspaces)
-    #layout_workspaces = request.json["layout_workspaces"]
-    #layout_data = request.json["layout_data"]
-
     try:
         all_cat_dicts = [cat.to_dict() for cat in Category.query.all()]
         l=[]
@@ -972,10 +758,189 @@ def categories_spaces():
             l.append(d)
 
         
+        categories_spaces_v2()
         return jsonify(l),200
     except Exception as e:
         abort(f'Error trying to get data: {e}', 500)
-'''        
+
+
+@app.route('/api/spaces/categories', methods=['POST'])
+def categories_spaces():
+    """
+    Receives json from jobresult and take height and width transformated
+    ---
+    consumes:
+
+        - "application/json"
+
+    tags:
+
+        - spaces
+
+    produces:
+
+        - application/json
+
+    parameters:
+
+        - in: "body"
+          name: "body"
+          required:
+          - building_id
+          - floor_id
+          - id
+          - selected_floor
+          - workspaces
+          - floor_elements
+          properties:
+            building_id:
+                type: integer
+                description: Building id layout.
+            floor_id:
+                type: integer
+                description: Floor id from layout
+            id:
+                type: integer
+                description: id of new layout generated
+            selected_floor:
+                type: object
+                properties:
+                  active: 
+                    type: boolean
+                  building_id:
+                    type: number
+                  elevators_number:
+                    type: number
+                  id:
+                    type: number
+                  image_link:
+                    type: string
+                  m2:
+                    type: number
+                  rent_value: 
+                    type: number
+                  wys_id:
+                    type: string
+
+            workspaces:
+                type: array
+                items:
+                    type: object
+                    properties:
+                      alias:
+                        type: string
+                      color:
+                        type: string
+                      height:
+                        type: number
+                      id:
+                        type: number
+                      image:
+                        type: string
+                      layout_gen_id:
+                        type: number
+                      layout_zone_id:
+                        type: number
+                      position_x:
+                        type: number
+                      position_y:
+                        type: number
+                      rotation:
+                        type: string
+                      space_id:
+                        type: number
+                      width:
+                        type: number            
+
+    responses:
+            200:
+                description: Categories ok
+            400:
+                description: Workspaces missing
+    """
+    
+    if 'workspaces' not in request.json.keys():
+      abort(400, description=f"workspaces isn't in body")
+    workspaces=request.json["workspaces"]
+    workspace_params = {'id','height','width','alias','color','position_x','position_y','layout_gen_id','layout_zone_id','rotation','space_id','image'}
+    wsp=[]
+    for wdict in workspaces:
+      if wdict.keys() != workspace_params:
+        abort(400, description=f"A space data field is missing in the body")
+      tupla=(wdict["space_id"],wdict["height"],wdict["width"],int(wdict["rotation"]),wdict["position_x"],wdict["position_y"])
+      wsp.append(tupla)
+
+    wsp.sort()
+    workspaces={}
+    h1=0
+    w1=0
+    for sid,h,w,r,px,py in wsp:
+        if sid not in workspaces:
+            workspaces[sid]=[h,w,r,px,py,1]
+            h1=h
+            w1=w
+        else:
+            workspaces[sid][5]+=1
+
+    try:
+        all_cat_dicts = [cat.to_dict() for cat in Category.query.all()]
+        l=[]
+        for cat in all_cat_dicts:
+          d={}
+          check=True
+          if 'id' in cat:
+            d['id']=cat['id']
+            if 'name' in cat:
+              d['name']=cat['name']
+              if 'subcategories' in cat:
+                d['subcategories']=[]
+                for c in cat['subcategories']:
+                  d1={}
+                  if 'id' in c and 'name' in c:
+                    d1['id']=c['id']
+                    d1['name']=c['name']
+                    
+                    if 'spaces' in c and len(c['spaces'])>0:
+                      d1['spaces']=[]
+                      
+                      for space in c['spaces']:
+                        if 'id' in space:
+                          sp = Space.query.filter_by(id=space['id']).first()
+                          if sp is not None:
+                            if space["id"] in workspaces:
+                              h=workspaces[space["id"]][0]
+                              w=workspaces[space["id"]][1]
+                            else:
+                              h=h1*sp.height
+                              w=w1*sp.width
+                            d1['spaces'].append({
+                              'id': space['id'],
+                              'name': sp.name,
+                              'model_2d': sp.model_2d,
+                              'model_3d': sp.model_3d,
+                              'height': h,
+                              'width': w
+                              })
+                          else: check=False
+
+                        else: check=False
+                    else: check=False
+                    
+                  else: check=False
+                  d['subcategories'].append(d1)
+                   
+              else: check=False
+            else: check=False
+          else: check=False
+
+          if check:
+            l.append(d)
+
+        
+        return jsonify(l),200
+    except Exception as e:
+        abort(f'Error trying to get data: {e}', 500)
+    
 
 @app.route('/api/spaces/create', methods=['POST'])
 @token_required
