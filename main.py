@@ -874,11 +874,15 @@ def categories_spaces():
     workspaces={}
     h1=0
     w1=0
+    check=True
     for sid,h,w,r,px,py in wsp:
         if sid not in workspaces:
             workspaces[sid]=[h,w,r,px,py,1]
-            h1=h
-            w1=w
+            sp = Space.query.filter_by(id=sid).first()
+            if sp is not None and check:
+              h1=h/sp.height
+              w1=h/sp.width
+              check=False
         else:
             workspaces[sid][5]+=1
 
