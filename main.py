@@ -758,7 +758,7 @@ def categories_spaces_old():
             l.append(d)
 
         
-        categories_spaces_v2()
+        #categories_spaces_v2()
         return jsonify(l),200
     except Exception as e:
         abort(f'Error trying to get data: {e}', 500)
